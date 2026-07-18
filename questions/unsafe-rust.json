@@ -1,0 +1,56 @@
+{
+  "topic": "unsafe-rust",
+  "title": "Unsafe Rust",
+  "quiz": [
+    {
+      "q": "What does the `unsafe` keyword actually do?",
+      "options": [
+        "Turns off all safety checks for the whole program",
+        "Unlocks a small fixed set of extra operations the compiler can't prove safe",
+        "Makes the code run faster automatically",
+        "Disables the borrow checker everywhere"
+      ],
+      "answer": 1,
+      "explain": "`unsafe` only unlocks five specific operations (like dereferencing raw pointers and calling unsafe functions). It does NOT disable safety for the rest of your program."
+    },
+    {
+      "q": "Which of these requires an `unsafe` block?",
+      "options": [
+        "Creating a raw pointer with `&x as *const i32`",
+        "Dereferencing a raw pointer with `*p`",
+        "Declaring a variable",
+        "Calling a normal safe function"
+      ],
+      "answer": 1,
+      "explain": "Creating a raw pointer is safe (it's just a number). Actually following it with `*p` could read invalid memory, so dereferencing requires `unsafe`."
+    },
+    {
+      "q": "What is the recommended pattern for using unsafe code?",
+      "options": [
+        "Spread unsafe blocks throughout the codebase for speed",
+        "Wrap a small, checked unsafe core inside a safe API so callers never touch unsafe",
+        "Mark the whole program `unsafe`",
+        "Use unsafe to silence borrow-checker errors"
+      ],
+      "answer": 1,
+      "explain": "The standard library does this everywhere (e.g. Vec): a safe function checks the conditions, then a tiny unsafe block does the dangerous operation. Callers stay in safe Rust."
+    },
+    {
+      "q": "What happens if you break the contract of an unsafe block (e.g. dereference a dangling pointer)?",
+      "options": [
+        "A clean compile error",
+        "Undefined behavior — crashes, corruption, or silent wrong results",
+        "The block is skipped automatically",
+        "Rust rolls it back safely"
+      ],
+      "answer": 1,
+      "explain": "Unsafe is a promise you make to the compiler. Break it and you get undefined behavior: the exact crashes and corruption Rust normally prevents. There's no partial credit."
+    }
+  ],
+  "flashcards": [
+    { "front": "Does `unsafe` disable the borrow checker?", "back": "No. It only unlocks five operations (raw-pointer deref, unsafe fn calls, mutable statics, unsafe traits, unions). Ordinary ownership rules still apply." },
+    { "front": "The golden pattern for unsafe code?", "back": "Wrap a small, checked `unsafe` core inside a safe API — like `Vec` does — so callers never write `unsafe` themselves." },
+    { "front": "What is undefined behavior?", "back": "The result of breaking an unsafe promise (dangling pointer, bad FFI call, uninitialized memory): crashes, corruption, or code that works then fails later." },
+    { "front": "How often should application code use `unsafe`?", "back": "Almost never. It's mainly for FFI, low-level data structures, or a measured performance need. Prefer a safe alternative whenever one exists." }
+  ]
+}

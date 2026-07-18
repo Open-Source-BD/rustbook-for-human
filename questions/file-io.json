@@ -1,0 +1,56 @@
+{
+  "topic": "file-io",
+  "title": "File I/O",
+  "quiz": [
+    {
+      "q": "Why do almost all `std::fs` functions return a `Result`?",
+      "options": [
+        "Because Rust dislikes files",
+        "Because file access can always fail (missing file, no permission, full disk)",
+        "So they run faster",
+        "To make the code longer on purpose"
+      ],
+      "answer": 1,
+      "explain": "The filesystem is the unreliable outside world. Any read or write can fail, so the API returns a Result and forces you to handle the failure case."
+    },
+    {
+      "q": "What does the `?` operator do on a line like `let t = fs::read_to_string(p)?;`?",
+      "options": [
+        "Prints the error and continues",
+        "Ignores any error silently",
+        "Unwraps the Ok value, or returns the Err from the current function",
+        "Retries the read three times"
+      ],
+      "answer": 2,
+      "explain": "`?` gives you the value on success, or immediately returns the error to the caller on failure — but only inside a function that itself returns Result or Option."
+    },
+    {
+      "q": "What does `fs::write(\"log.txt\", data)` do if the file already exists?",
+      "options": [
+        "Appends the data to the end",
+        "Overwrites the file completely, erasing the old contents",
+        "Returns an error and does nothing",
+        "Creates log.txt.bak first"
+      ],
+      "answer": 1,
+      "explain": "`fs::write` replaces the entire file. To add to an existing file instead, open it with `OpenOptions::new().append(true)`."
+    },
+    {
+      "q": "Which requirement must a function meet to use the `?` operator inside it?",
+      "options": [
+        "It must be named main",
+        "It must return `Result` (or `Option`)",
+        "It must be marked `unsafe`",
+        "It must take no arguments"
+      ],
+      "answer": 1,
+      "explain": "`?` needs somewhere to send an error, so the enclosing function must return a Result or Option. That's why file-reading helpers usually return `Result<String, io::Error>`."
+    }
+  ],
+  "flashcards": [
+    { "front": "Read an entire text file into a String?", "back": "`std::fs::read_to_string(path)` — returns a `Result<String, io::Error>`." },
+    { "front": "Write a string to a file (creating/overwriting it)?", "back": "`std::fs::write(path, data)` — returns a Result; it overwrites any existing file." },
+    { "front": "Add to a file without erasing it?", "back": "Open it with `OpenOptions::new().create(true).append(true).open(path)`, then write to it." },
+    { "front": "Why prefer `?` over `.unwrap()` in real programs?", "back": "`.unwrap()`/`.expect()` crash the whole program on the first error; `?` propagates the error so it can be handled gracefully." }
+  ]
+}

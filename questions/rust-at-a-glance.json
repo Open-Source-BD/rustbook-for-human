@@ -1,0 +1,68 @@
+{
+  "topic": "rust-at-a-glance",
+  "title": "Rust at a glance",
+  "quiz": [
+    {
+      "q": "What are the two main things Rust is designed to give you at the same time?",
+      "options": [
+        "Speed and memory safety",
+        "A garbage collector and dynamic typing",
+        "Short code and no compiler",
+        "Automatic parallelism and a REPL"
+      ],
+      "answer": 0,
+      "explain": "Rust's whole pitch is programs that are both fast and free of memory bugs, achieved without a garbage collector."
+    },
+    {
+      "q": "How does Rust manage memory safety?",
+      "options": [
+        "A background garbage collector cleans up while the program runs",
+        "You call free() by hand like in C",
+        "The compiler checks ownership rules before the program runs and rejects unsafe code",
+        "It never frees memory, so programs leak"
+      ],
+      "answer": 2,
+      "explain": "Rust has no garbage collector and no manual free(). The compiler enforces ownership rules at compile time, refusing to build unsafe code."
+    },
+    {
+      "q": "Which single concept is described as the core idea that makes the rest of Rust click?",
+      "options": [
+        "Macros",
+        "Ownership",
+        "Async/await",
+        "Unsafe blocks"
+      ],
+      "answer": 1,
+      "explain": "Ownership is Rust's rule for who is responsible for each value and when it's cleaned up. It's the heart of the language."
+    },
+    {
+      "q": "For a beginner, which topics should you save for later rather than start with?",
+      "options": [
+        "Variables and functions",
+        "Printing and if/else",
+        "Macros, unsafe, and async",
+        "Reading compiler errors"
+      ],
+      "answer": 2,
+      "explain": "Macros, unsafe, and async are advanced. Beginners should orient first, then learn basics and ownership before touching them."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What two qualities does Rust aim to deliver together?",
+      "back": "Speed (like C/C++) and memory safety (like garbage-collected languages) — with no garbage collector."
+    },
+    {
+      "front": "When does Rust check that your memory use is safe?",
+      "back": "At compile time. The compiler enforces ownership rules before the program ever runs and refuses to build unsafe code."
+    },
+    {
+      "front": "What does 'Rust is explicit by default' mean?",
+      "back": "Rust rarely does hidden things behind your back; you say what you mean, so code tells you the truth about what it does."
+    },
+    {
+      "front": "What is the one big idea to learn slowly, because it makes the rest of Rust make sense?",
+      "back": "Ownership — who owns each value and when it gets cleaned up."
+    }
+  ]
+}

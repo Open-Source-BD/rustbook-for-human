@@ -1,0 +1,68 @@
+{
+  "topic": "references-and-dereference",
+  "title": "References and dereference",
+  "quiz": [
+    {
+      "q": "What does the `*` operator do?",
+      "options": [
+        "Creates a new reference to a value",
+        "Follows a reference to reach the value it points at",
+        "Multiplies two references together",
+        "Frees the memory a reference points at"
+      ],
+      "answer": 1,
+      "explain": "`*` dereferences: it follows the reference (signpost) back to the actual value. `&` makes a reference; `*` follows one — they are opposites."
+    },
+    {
+      "q": "Given `let r = &x;` where x is an i32, why does `r + 1` fail but `*r + 1` work?",
+      "options": [
+        "`r` is a reference, not a number; `*r` gets the number so + works",
+        "`r + 1` works fine, the question is wrong",
+        "You must always write `&` before arithmetic",
+        "`*r` copies x into a new variable named r"
+      ],
+      "answer": 0,
+      "explain": "`r` is a `&i32` (a signpost), and you can't add 1 to a signpost. `*r` follows it to the actual number, then + 1 works."
+    },
+    {
+      "q": "Why can you call `r.len()` without writing `*` when r is a `&String`?",
+      "options": [
+        "String has a special no-deref rule",
+        "The dot operator auto-follows references (deref coercion)",
+        "len() secretly takes a reference to a reference",
+        "It doesn't work; you must write (*r).len()"
+      ],
+      "answer": 1,
+      "explain": "The `.` operator automatically follows references as needed to find the method, so method calls rarely need an explicit `*`."
+    },
+    {
+      "q": "How do you add 1 to the value that a `&mut` reference `r` points at?",
+      "options": [
+        "`r = r + 1;`",
+        "`r += 1;`",
+        "`*r += 1;`",
+        "`&r += 1;`"
+      ],
+      "answer": 2,
+      "explain": "`*r` follows the mutable reference to the real value, and `+= 1` changes it there. Without `*`, you'd try to change the signpost itself."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a reference, in one image?",
+      "back": "A signpost: it points at a value stored elsewhere. It doesn't contain the value itself. You make one with `&`."
+    },
+    {
+      "front": "What does `*` (dereference) do?",
+      "back": "Follows a reference back to the value it points at. `&` creates a reference; `*` follows it. They're opposites."
+    },
+    {
+      "front": "When do you need `*` and when not?",
+      "back": "Need it for arithmetic and assignment through a reference (`*r + 1`, `*r = 5`). Not for method calls — the dot operator auto-follows references."
+    },
+    {
+      "front": "What is a `&str` compared to `&String`?",
+      "back": "A `&str` is a lightweight borrowed view of text. Thanks to deref coercion, a `&String` can be used where a `&str` is expected."
+    }
+  ]
+}

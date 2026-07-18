@@ -1,0 +1,56 @@
+{
+  "topic": "interior-mutability",
+  "title": "Interior mutability",
+  "quiz": [
+    {
+      "q": "What is interior mutability?",
+      "options": [
+        "Turning off the borrow checker entirely",
+        "Mutating a value through a shared `&` reference, with the borrow rules checked at runtime",
+        "A way to make all fields public",
+        "Making a struct thread-safe automatically"
+      ],
+      "answer": 1,
+      "explain": "Interior mutability lets you change data even when you only hold a shared `&`. The type (like RefCell) enforces the borrow rules itself, at runtime instead of compile time."
+    },
+    {
+      "q": "What happens if you hold a `RefCell` read borrow and call `borrow_mut()` at the same time?",
+      "options": [
+        "It's a compile error",
+        "It silently allows both",
+        "It panics at runtime ('already borrowed')",
+        "It returns None"
+      ],
+      "answer": 2,
+      "explain": "RefCell enforces 'many readers or one writer' at runtime. Violating it compiles fine but panics with a BorrowMutError when it runs."
+    },
+    {
+      "q": "Which combination gives shared ownership AND mutation in single-threaded code?",
+      "options": [
+        "`Box<RefCell<T>>`",
+        "`Rc<RefCell<T>>`",
+        "`Arc<Mutex<T>>`",
+        "`Rc<T>` alone"
+      ],
+      "answer": 1,
+      "explain": "`Rc` provides multiple owners and `RefCell` provides interior mutability. Together, several owners can each mutate the shared value (single-threaded)."
+    },
+    {
+      "q": "Why can't you use `RefCell` to share mutable state across threads?",
+      "options": [
+        "It's too slow",
+        "It isn't thread-safe (not Sync), so the compiler rejects it; use `Mutex`/`RwLock` instead",
+        "It only holds numbers",
+        "It requires unsafe code"
+      ],
+      "answer": 1,
+      "explain": "RefCell's runtime borrow tracking isn't thread-safe, so it can't cross thread boundaries. The thread-safe equivalents are Mutex and RwLock."
+    }
+  ],
+  "flashcards": [
+    { "front": "What does `RefCell<T>` let you do?", "back": "Mutate through a shared `&` via `.borrow()` / `.borrow_mut()`, enforcing 'many readers or one writer' at runtime — panicking if you break it." },
+    { "front": "`Cell<T>` vs `RefCell<T>`?", "back": "`Cell` is for small `Copy` values via `get`/`set` and never panics; `RefCell` lends references and checks borrows at runtime." },
+    { "front": "The single-thread combo for shared, mutable data?", "back": "`Rc<RefCell<T>>` — Rc for multiple owners, RefCell for interior mutation." },
+    { "front": "The multi-thread equivalents?", "back": "`Arc` replaces `Rc`, and `Mutex`/`RwLock` replace `RefCell`. So `Arc<Mutex<T>>` is the thread-safe twin of `Rc<RefCell<T>>`." }
+  ]
+}

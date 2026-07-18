@@ -1,0 +1,68 @@
+{
+  "topic": "enums",
+  "title": "Enums",
+  "quiz": [
+    {
+      "q": "What does an enum represent?",
+      "options": [
+        "Several values all present together",
+        "A value that is exactly one of several named variants",
+        "A list that can grow",
+        "A number with units"
+      ],
+      "answer": 1,
+      "explain": "An enum says a value is exactly one of its variants — like a traffic light being red OR yellow OR green, never several at once."
+    },
+    {
+      "q": "Which is true about enum variants in Rust?",
+      "options": [
+        "Variants can never hold data",
+        "All variants must hold the same type of data",
+        "Each variant can hold its own, different shape of data (or none)",
+        "Variants are just numbers"
+      ],
+      "answer": 2,
+      "explain": "Rust enum variants can each carry different data: nothing, a tuple, or named fields. That's what makes them powerful for modeling."
+    },
+    {
+      "q": "What is `Option` in Rust?",
+      "options": [
+        "A settings menu",
+        "A built-in enum with Some(value) and None, used instead of null",
+        "A kind of struct",
+        "A loop keyword"
+      ],
+      "answer": 1,
+      "explain": "Option is an enum: `Some(value)` means there's a value, `None` means there isn't. It replaces null and forces you to handle the missing case."
+    },
+    {
+      "q": "How do you refer to the `North` variant of an enum named `Direction`?",
+      "options": [
+        "North",
+        "Direction.North",
+        "Direction::North",
+        "North::Direction"
+      ],
+      "answer": 2,
+      "explain": "You select a variant with `EnumName::Variant`, so `Direction::North`, using the `::` path syntax."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does an enum model?",
+      "back": "A value that is exactly ONE of several named variants — 'one of these', not 'all of these together' (that's a struct)."
+    },
+    {
+      "front": "Can enum variants hold data?",
+      "back": "Yes, and each variant can hold a different shape: nothing (Quit), a tuple (Write(String)), or named fields (Move { x, y })."
+    },
+    {
+      "front": "What is Option and why does Rust use it?",
+      "back": "An enum with Some(value) and None. It replaces null: 'might be missing' is in the type, so you're forced to handle the None case."
+    },
+    {
+      "front": "How do you pick an enum variant?",
+      "back": "With `EnumName::Variant`, e.g. `Direction::North` — the `::` path syntax."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "topic": "logging-and-tracing",
+  "title": "Logging and tracing",
+  "quiz": [
+    {
+      "q": "You call `tracing::info!` everywhere but nothing prints. What's the most likely cause?",
+      "options": [
+        "You need to restart your computer",
+        "No subscriber is installed — the macros emit events but nobody is listening",
+        "info! only works in release builds",
+        "You must call info! twice"
+      ],
+      "answer": 1,
+      "explain": "In tracing, macros only emit events. A separate subscriber (e.g. tracing_subscriber::fmt::init()) must be installed once at startup or nothing prints."
+    },
+    {
+      "q": "Which list shows log levels from least to most severe?",
+      "options": [
+        "error, warn, info, debug, trace",
+        "trace, debug, info, warn, error",
+        "info, trace, warn, debug, error",
+        "debug, info, warn, error, trace"
+      ],
+      "answer": 1,
+      "explain": "From noisiest/least severe to most severe: trace, debug, info, warn, error. You set a threshold and everything below it is dropped."
+    },
+    {
+      "q": "Why prefer `info!(user_id = id, \"logged in\")` over `info!(\"user {id} logged in\")`?",
+      "options": [
+        "It's shorter to type",
+        "The value becomes a searchable structured field instead of unsearchable text",
+        "String formatting is not allowed in tracing",
+        "It changes the log level"
+      ],
+      "answer": 1,
+      "explain": "Structured fields are labeled key/values that log tools can filter on (e.g. user_id = 7). Values glued into the message are just text."
+    },
+    {
+      "q": "What does a tracing `span` give you that a single `info!` event does not?",
+      "options": [
+        "Colored output",
+        "A duration of work whose context tags every log inside it (e.g. request_id)",
+        "Automatic error handling",
+        "Faster logging"
+      ],
+      "answer": 1,
+      "explain": "Events are single points; a span wraps a chunk of work so every log inside it carries shared context, letting you follow one request end to end."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "In the `tracing` crate, what actually decides where log events go?",
+      "back": "A subscriber. The info!/warn!/error! macros only emit events; you must install a subscriber (e.g. tracing_subscriber::fmt::init()) once at startup or nothing prints."
+    },
+    {
+      "front": "Name the five log levels from least to most severe.",
+      "back": "trace, debug, info, warn, error. Set a threshold; everything below it is dropped."
+    },
+    {
+      "front": "What is a structured field in tracing?",
+      "back": "A labeled key/value attached to a log event, e.g. info!(user_id = 7, \"...\"), that log tools can search and filter on — unlike text buried in the message."
+    },
+    {
+      "front": "What is a span, and how does it differ from an event?",
+      "back": "A span represents a duration of work; every log inside it is tagged with the span's context (like request_id). Events are single points in time."
+    }
+  ]
+}

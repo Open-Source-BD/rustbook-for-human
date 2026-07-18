@@ -1,0 +1,68 @@
+{
+  "topic": "variables-and-mutability",
+  "title": "Variables and mutability",
+  "quiz": [
+    {
+      "q": "By default, what happens if you try to reassign a variable created with `let`?",
+      "options": [
+        "It works fine; variables are mutable by default",
+        "The compiler errors: cannot assign twice to an immutable variable",
+        "It silently creates a new variable",
+        "It only fails if the type changes"
+      ],
+      "answer": 1,
+      "explain": "Variables are immutable by default. Reassigning without `mut` gives 'cannot assign twice to immutable variable'."
+    },
+    {
+      "q": "What is the difference between `mut` and shadowing?",
+      "options": [
+        "They are two names for the same thing",
+        "mut changes a value in place (same type); shadowing makes a new variable that can change type",
+        "Shadowing is faster than mut",
+        "mut only works on numbers, shadowing only on text"
+      ],
+      "answer": 1,
+      "explain": "`mut` reassigns the same variable and the type must stay the same. Shadowing (`let x` again) creates a brand-new variable, which may even have a different type."
+    },
+    {
+      "q": "What does `let x = 5; let x = x + 1;` do?",
+      "options": [
+        "Errors because x is immutable",
+        "Changes the original x to 6",
+        "Creates a new variable x (shadowing) whose value is 6; the old one is hidden",
+        "Creates two variables both visible at once"
+      ],
+      "answer": 2,
+      "explain": "The second `let x` shadows the first — a new variable reusing the name. The old x is hidden, not mutated."
+    },
+    {
+      "q": "You wrote `let mut n = 3;` but never change `n`. What does Rust do?",
+      "options": [
+        "Nothing, it's perfectly fine",
+        "Refuses to compile",
+        "Warns that the variable does not need to be mutable",
+        "Automatically removes the mut"
+      ],
+      "answer": 2,
+      "explain": "Rust warns 'variable does not need to be mutable' — a hint that your `mut` and your actual usage disagree."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "How do you make a variable changeable?",
+      "back": "Add `mut`: `let mut x = 5;`. Without it, variables are immutable by default."
+    },
+    {
+      "front": "What is shadowing?",
+      "back": "Writing `let` again with the same name. It creates a NEW variable (the old one is hidden) and it may have a different type."
+    },
+    {
+      "front": "mut vs shadowing — the one-line difference",
+      "back": "mut = same variable changes in place, type stays the same. Shadowing = new variable reusing the name, type can change."
+    },
+    {
+      "front": "What is a `const` in Rust?",
+      "back": "A value fixed at compile time, always UPPER_SNAKE_CASE with an explicit type, e.g. `const MAX: u32 = 3;`. Never uses mut."
+    }
+  ]
+}

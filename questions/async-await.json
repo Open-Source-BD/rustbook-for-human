@@ -1,0 +1,56 @@
+{
+  "topic": "async-await",
+  "title": "Async and await",
+  "quiz": [
+    {
+      "q": "What does calling an `async fn` actually do?",
+      "options": [
+        "Runs its body immediately and returns the result",
+        "Returns a future — inert work that runs nothing until it is awaited or driven",
+        "Spawns a new thread",
+        "Blocks until the work is done"
+      ],
+      "answer": 1,
+      "explain": "An async fn returns a future. Its body does not run when you call it; something must `.await` it (or a runtime must drive it) for anything to happen."
+    },
+    {
+      "q": "Where can you use `.await`?",
+      "options": [
+        "Anywhere, including normal functions",
+        "Only inside `async` functions or blocks",
+        "Only inside `fn main`",
+        "Only inside `unsafe` blocks"
+      ],
+      "answer": 1,
+      "explain": "`.await` is only legal inside async code, because it needs the async state machine around it. In a normal function you hand the future to a runtime instead."
+    },
+    {
+      "q": "Rust the language ships `async`/`.await`. What does it NOT ship?",
+      "options": [
+        "The `.await` keyword",
+        "An executor/runtime to actually drive futures",
+        "The ability to define async functions",
+        "The `Future` trait"
+      ],
+      "answer": 1,
+      "explain": "Rust provides the syntax and the Future trait but no executor. You pick a runtime like Tokio to drive your top-level future to completion."
+    },
+    {
+      "q": "Which workload is async best suited for?",
+      "options": [
+        "CPU-heavy number crunching across cores",
+        "I/O-bound work with lots of waiting (network, disk), where one thread juggles many tasks",
+        "Anything, it's always faster than threads",
+        "Only single-step programs with no waiting"
+      ],
+      "answer": 1,
+      "explain": "Async shines for I/O-bound work: tasks spend most of their time waiting, so one thread can handle thousands. CPU-bound crunching is better served by threads."
+    }
+  ],
+  "flashcards": [
+    { "front": "What does an `async fn` return?", "back": "A future — a value representing work that will produce a result later. It runs nothing until awaited or driven by a runtime." },
+    { "front": "What does `.await` do?", "back": "Drives a future to completion; if it must wait on I/O it parks the task and lets other tasks run, resuming when ready. Only usable inside async code." },
+    { "front": "What does `#[tokio::main]` do?", "back": "Lets `main` be `async`, starts the Tokio runtime, and drives your top-level future — without a runtime, async code never actually runs." },
+    { "front": "Async vs threads?", "back": "Async = I/O-bound waiting (many idle tasks on few threads). Threads = CPU-bound work across cores." }
+  ]
+}

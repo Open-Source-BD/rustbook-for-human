@@ -1,0 +1,56 @@
+{
+  "topic": "smart-pointers",
+  "title": "Smart pointers",
+  "quiz": [
+    {
+      "q": "What does `Box<T>` give you?",
+      "options": [
+        "Shared ownership across many owners",
+        "A single-owner value stored on the heap",
+        "Thread-safe reference counting",
+        "Runtime-checked borrowing"
+      ],
+      "answer": 1,
+      "explain": "`Box<T>` puts one value on the heap with a single owner. It's needed for large values and for recursive types whose size would otherwise be unknown."
+    },
+    {
+      "q": "What does `Rc::clone(&value)` do?",
+      "options": [
+        "Makes a deep copy of the underlying data",
+        "Adds another owner and bumps the reference count (cheap, no data copy)",
+        "Moves the value to a new thread",
+        "Frees the value"
+      ],
+      "answer": 1,
+      "explain": "`Rc::clone` is cheap: it creates another handle pointing at the same data and increments the owner count. The data itself is shared, not duplicated."
+    },
+    {
+      "q": "You need several threads to share ownership of one value. Which do you use?",
+      "options": [
+        "`Rc<T>`",
+        "`Box<T>`",
+        "`Arc<T>`",
+        "A plain reference `&T`"
+      ],
+      "answer": 2,
+      "explain": "`Arc<T>` is the thread-safe reference-counted pointer. `Rc<T>` isn't thread-safe and won't compile across threads; use `Arc` when threads are involved."
+    },
+    {
+      "q": "Why is `Box` required for a recursive type like a linked-list node?",
+      "options": [
+        "Because recursion is not allowed in Rust",
+        "A Box is pointer-sized, giving the type a finite, known size the compiler can compute",
+        "Because Box makes it run faster",
+        "It isn't required; recursive types work without any indirection"
+      ],
+      "answer": 1,
+      "explain": "Without indirection, a node containing itself would have infinite size. A `Box` is a fixed-size pointer, so the compiler can finally compute the type's size."
+    }
+  ],
+  "flashcards": [
+    { "front": "`Box<T>` — what and when?", "back": "Single owner, value on the heap. Use for large values and recursive types (like linked lists) where the size must be finite and known." },
+    { "front": "`Rc<T>` — what and when?", "back": "Multiple owners of one value, single-threaded. `Rc::clone` bumps an owner count cheaply; the value drops when the last owner goes away." },
+    { "front": "`Rc` vs `Arc`?", "back": "Same idea; `Arc` uses a thread-safe (atomic) counter so it can be shared across threads. `Rc` is single-threaded and slightly faster." },
+    { "front": "Can you mutate through `Rc`/`Arc`?", "back": "Not directly — they give shared read access. Combine with `RefCell` (single-thread) or `Mutex` (multi-thread) to mutate shared data." }
+  ]
+}

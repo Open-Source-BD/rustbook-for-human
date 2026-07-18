@@ -1,0 +1,68 @@
+{
+  "topic": "serde-and-json",
+  "title": "Serde and JSON",
+  "quiz": [
+    {
+      "q": "What do the two halves of the name 'Serde' mean?",
+      "options": [
+        "Server and Debug",
+        "Serialize (Rust -> text) and Deserialize (text -> Rust)",
+        "Serial and Decode",
+        "Secure and Decrypt"
+      ],
+      "answer": 1,
+      "explain": "Serde = Serialize + Deserialize: turning Rust values into text/bytes and reading them back into Rust types."
+    },
+    {
+      "q": "What does `#[derive(Serialize, Deserialize)]` above a struct do?",
+      "options": [
+        "Marks the struct as unsafe",
+        "Generates the conversion code between the struct and formats like JSON at compile time",
+        "Sends the struct over the network",
+        "Makes all fields public"
+      ],
+      "answer": 1,
+      "explain": "The derive generates all the serialize/deserialize code for you at compile time, based on the struct's fields."
+    },
+    {
+      "q": "Why does `serde_json::from_str` return a `Result`?",
+      "options": [
+        "Because JSON is always invalid",
+        "Because deserializing untrusted input can fail (missing fields, wrong types, malformed text)",
+        "Because Result is required for all functions",
+        "Because it needs to return two values"
+      ],
+      "answer": 1,
+      "explain": "Deserializing reads outside data you don't control. Bad input becomes an Err you can handle instead of a crash."
+    },
+    {
+      "q": "The JSON sends a key `displayName` but your Rust field is `display_name`. What fixes the mismatch?",
+      "options": [
+        "Rename your Rust field to displayName",
+        "Add `#[serde(rename = \"displayName\")]` above the field",
+        "Nothing — serde ignores case",
+        "Wrap the field in Result"
+      ],
+      "answer": 1,
+      "explain": "Serde matches by field name. `#[serde(rename = ...)]` (or `rename_all`) maps between the JSON key and your Rust field name."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Which two crates do you add for JSON with serde, and what feature does serde need?",
+      "back": "`serde` (with the `derive` feature) and `serde_json`. e.g. `cargo add serde --features derive` then `cargo add serde_json`."
+    },
+    {
+      "front": "How do you convert a struct to a JSON string and back?",
+      "back": "`serde_json::to_string(&value)` -> JSON String; `serde_json::from_str(text)` -> your type. Both return a Result."
+    },
+    {
+      "front": "How do you model a JSON field that may be missing?",
+      "back": "Use `Option<T>`. Present -> Some(value), absent -> None, instead of a deserialization error."
+    },
+    {
+      "front": "What does `#[serde(rename = \"...\")]` do?",
+      "back": "Maps a JSON key name to a differently-named Rust field, so your Rust can stay snake_case while matching the wire format."
+    }
+  ]
+}

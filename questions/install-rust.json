@@ -1,0 +1,68 @@
+{
+  "topic": "install-rust",
+  "title": "Install Rust",
+  "quiz": [
+    {
+      "q": "What is the official, recommended way to install Rust?",
+      "options": [
+        "rustup, from rustup.rs",
+        "Your Linux distro's package manager",
+        "Downloading rustc.exe from a random site",
+        "Homebrew only"
+      ],
+      "answer": 0,
+      "explain": "rustup (from rustup.rs) is the official installer. It installs and updates rustc and cargo and can switch toolchains."
+    },
+    {
+      "q": "You just installed Rust but your terminal says 'command not found' for cargo. What's the most likely fix?",
+      "options": [
+        "Reinstall your operating system",
+        "Open a new terminal so the PATH change takes effect",
+        "Delete rustup and use apt instead",
+        "Nothing, Rust is broken"
+      ],
+      "answer": 1,
+      "explain": "An already-open terminal doesn't see the new PATH. Opening a fresh terminal (or sourcing ~/.cargo/env) usually fixes it."
+    },
+    {
+      "q": "Which command confirms the compiler is installed and reachable?",
+      "options": [
+        "rust --check",
+        "cargo install",
+        "rustc --version",
+        "rustup remove"
+      ],
+      "answer": 2,
+      "explain": "rustc --version prints the compiler's version number, confirming it's installed and on your PATH."
+    },
+    {
+      "q": "How do you update to the latest stable Rust after it's installed?",
+      "options": [
+        "rustup update",
+        "cargo new update",
+        "rustc --upgrade",
+        "You must reinstall from scratch each time"
+      ],
+      "answer": 0,
+      "explain": "rustup update fetches the latest stable rustc and cargo and swaps them in. Rust releases roughly every six weeks."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What tool installs and updates Rust, and where do you get it?",
+      "back": "rustup, from rustup.rs. It manages rustc and cargo and keeps them updated."
+    },
+    {
+      "front": "After installing Rust, why might 'cargo' still be 'command not found'?",
+      "back": "Your open terminal hasn't picked up the new PATH. Open a new terminal (or run: source \"$HOME/.cargo/env\")."
+    },
+    {
+      "front": "How do you verify the install worked?",
+      "back": "Run rustc --version and cargo --version — both should print a version number."
+    },
+    {
+      "front": "How do you update Rust to the latest stable version?",
+      "back": "rustup update"
+    }
+  ]
+}

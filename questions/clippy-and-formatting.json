@@ -1,0 +1,68 @@
+{
+  "topic": "clippy-and-formatting",
+  "title": "Clippy and formatting",
+  "quiz": [
+    {
+      "q": "How is clippy different from the compiler?",
+      "options": [
+        "Clippy is faster than the compiler",
+        "The compiler stops code that's wrong; clippy suggests how to improve code that already compiles",
+        "Clippy replaces the compiler",
+        "Clippy only checks formatting"
+      ],
+      "answer": 1,
+      "explain": "The compiler answers 'does this work?'. Clippy answers 'is this the idiomatic way?' — it lints code that already compiles fine."
+    },
+    {
+      "q": "Which clippy suggestion is correct?",
+      "options": [
+        "`x.is_empty()` should become `x.len() == 0`",
+        "`x.len() == 0` should become `x.is_empty()`",
+        "`for x in &v` should become an index loop",
+        "`if flag` should become `if flag == true`"
+      ],
+      "answer": 1,
+      "explain": "Clippy prefers `.is_empty()` over `.len() == 0` — it's clearer and can be faster. The other options are backwards."
+    },
+    {
+      "q": "What jobs do `cargo fmt` and `cargo clippy` handle, respectively?",
+      "options": [
+        "Both do the same thing",
+        "cargo fmt handles layout/spacing; cargo clippy handles style and logic smells",
+        "cargo fmt runs tests; cargo clippy compiles",
+        "cargo fmt lints; cargo clippy formats"
+      ],
+      "answer": 1,
+      "explain": "They don't overlap: cargo fmt makes code look standard (spacing, indentation); cargo clippy makes it read better (idiomatic patterns)."
+    },
+    {
+      "q": "You disagree with one specific clippy lint in one place. What's the right move?",
+      "options": [
+        "Stop using clippy entirely",
+        "Understand why it fired, then silence just that lint with `#[allow(clippy::lint_name)]` if it truly doesn't fit",
+        "Delete the code",
+        "Ignore all warnings forever"
+      ],
+      "answer": 1,
+      "explain": "Clippy is usually right, but occasionally a lint doesn't fit. Understand it first, then use #[allow(...)] deliberately for that spot only."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does clippy do that the compiler doesn't?",
+      "back": "It lints code that already compiles, suggesting more idiomatic/clearer/faster versions — often with the exact fix. The compiler only stops wrong code."
+    },
+    {
+      "front": "What do `cargo fmt` and `cargo clippy` each handle?",
+      "back": "cargo fmt = layout/spacing/indentation (how code looks). cargo clippy = style and logic smells (how code reads). Different, non-overlapping jobs."
+    },
+    {
+      "front": "Give two classic clippy catches.",
+      "back": "`x.len() == 0` -> `x.is_empty()`; `if flag == true` -> `if flag`; manual index loop -> `for item in &vec`."
+    },
+    {
+      "front": "How do you silence a single clippy lint you intentionally disagree with?",
+      "back": "`#[allow(clippy::lint_name)]` on the item. Do it deliberately after understanding why the lint fired."
+    }
+  ]
+}

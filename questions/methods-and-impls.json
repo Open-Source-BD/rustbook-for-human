@@ -1,0 +1,68 @@
+{
+  "topic": "methods-and-impls",
+  "title": "Methods and impl blocks",
+  "quiz": [
+    {
+      "q": "Which receiver should a method use if it only reads the data?",
+      "options": [
+        "self",
+        "&self",
+        "&mut self",
+        "no receiver"
+      ],
+      "answer": 1,
+      "explain": "`&self` borrows the value immutably — perfect for reading. Most methods use it."
+    },
+    {
+      "q": "A method needs to change a field. Which receiver does it need?",
+      "options": [
+        "&self",
+        "self",
+        "&mut self",
+        "static self"
+      ],
+      "answer": 2,
+      "explain": "`&mut self` borrows mutably, allowing the method to modify fields. Using `&self` would error with 'cannot assign ... behind a & reference'."
+    },
+    {
+      "q": "What is an associated function?",
+      "options": [
+        "A method that takes &mut self",
+        "A function in an impl block with no `self`, often a constructor, called with `Type::func()`",
+        "A function outside any impl",
+        "A function that returns nothing"
+      ],
+      "answer": 1,
+      "explain": "An associated function has no self receiver and is called with `::`, e.g. `String::from(...)` or `Rectangle::new(...)`. Constructors are the common case."
+    },
+    {
+      "q": "How do you call a method (with self) versus an associated function (no self)?",
+      "options": [
+        "Both use a dot",
+        "Both use ::",
+        "Method uses a dot (value.method()); associated function uses :: (Type::func())",
+        "Method uses ::; associated function uses a dot"
+      ],
+      "answer": 2,
+      "explain": "Methods with a self receiver use a dot: `rect.area()`. Associated functions (no self) use `::`: `Rectangle::new(...)`."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "The three method receivers and their meaning?",
+      "back": "&self = borrow to read (most common). &mut self = borrow to change a field. self = consume/take ownership (rare)."
+    },
+    {
+      "front": "To call a `&mut self` method, what must the variable be?",
+      "back": "`mut`. e.g. `let mut c = ...;` then `c.increment();`. Otherwise the mutable borrow is rejected."
+    },
+    {
+      "front": "What is an associated function?",
+      "back": "A function in an impl with no `self`, called with `Type::func()`. Often a constructor like `new`. `String::from` is a familiar example."
+    },
+    {
+      "front": "Dot vs :: for calling?",
+      "back": "value.method() (has self) uses a dot. Type::func() (associated function, no self) uses ::."
+    }
+  ]
+}

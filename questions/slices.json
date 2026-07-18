@@ -1,0 +1,68 @@
+{
+  "topic": "slices",
+  "title": "Slices",
+  "quiz": [
+    {
+      "q": "What does the slice `&s[0..2]` include?",
+      "options": [
+        "Indices 0, 1, and 2",
+        "Indices 0 and 1 (the end is exclusive)",
+        "Just index 2",
+        "Indices 1 and 2"
+      ],
+      "answer": 1,
+      "explain": "Ranges are start-inclusive, end-exclusive. `0..2` covers indices 0 and 1 and stops before 2 — the first two elements."
+    },
+    {
+      "q": "What kind of thing is a slice?",
+      "options": [
+        "A brand-new copy of part of the collection",
+        "A borrowed view into part of a collection — it owns nothing",
+        "A separate owned String",
+        "A number counting the elements"
+      ],
+      "answer": 1,
+      "explain": "A slice is a reference (a borrow) that views part of an existing collection. It copies nothing and owns nothing, so it can't outlive what it borrows."
+    },
+    {
+      "q": "What is a `&str`?",
+      "options": [
+        "A string slice — a borrowed view into string text",
+        "An owned, growable string on the heap",
+        "A single character",
+        "A vector of bytes you own"
+      ],
+      "answer": 0,
+      "explain": "A `&str` is a string slice: a borrowed window into text. Both text literals and slices of a String have this type."
+    },
+    {
+      "q": "You write `let piece = word[0..3];` (no `&`) on a String. Why won't it compile?",
+      "options": [
+        "The range is invalid",
+        "A slice is a borrow, so it needs the `&`",
+        "You must use () not []",
+        "Strings can't be sliced at all"
+      ],
+      "answer": 1,
+      "explain": "A slice is a reference, so it needs `&`: `&word[0..3]`. Without it you'd be trying to move a chunk out by value, which isn't allowed."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a slice?",
+      "back": "A borrowed view into part of a collection (a string or array). It copies nothing, owns nothing, and can't outlive the value it borrows from."
+    },
+    {
+      "front": "How do you write a slice, and what does the range mean?",
+      "back": "`&thing[start..end]`. The range is start-inclusive and end-exclusive, so `[0..2]` is the first two elements (0 and 1)."
+    },
+    {
+      "front": "What is a `&str`?",
+      "back": "A string slice — a borrowed window into text. Slicing a String gives a &str, and text literals like \"hi\" are also &str."
+    },
+    {
+      "front": "What's a slice of an array called?",
+      "back": "A `&[T]` — a borrowed view over a run of elements of type T. Prefer slice parameters (&[T], &str) for read-only access."
+    }
+  ]
+}

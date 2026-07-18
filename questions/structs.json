@@ -1,0 +1,68 @@
+{
+  "topic": "structs",
+  "title": "Structs",
+  "quiz": [
+    {
+      "q": "What happens if you leave out a field when constructing a struct?",
+      "options": [
+        "The field defaults to zero",
+        "It compiles but the field is empty",
+        "A compile error: missing fields",
+        "The field is filled with the previous struct's value"
+      ],
+      "answer": 2,
+      "explain": "You must provide every field in a struct literal (unless you copy the rest with struct update syntax). Missing one is a compile error."
+    },
+    {
+      "q": "How do you make a single field of a struct mutable?",
+      "options": [
+        "Put `mut` before that field in the definition",
+        "You can't — mutability is on the binding: `let mut instance = ...` makes the whole struct mutable",
+        "Use `pub mut` on the field",
+        "Fields are always mutable"
+      ],
+      "answer": 1,
+      "explain": "There is no per-field mut. `let mut user = ...` makes the entire struct changeable; without mut, no field can be assigned."
+    },
+    {
+      "q": "How do you read the `name` field of a struct value `user`?",
+      "options": [
+        "user::name",
+        "user->name",
+        "user.name",
+        "name(user)"
+      ],
+      "answer": 2,
+      "explain": "Fields are accessed with a dot: `user.name`. The `::` is for paths and associated functions, not field access."
+    },
+    {
+      "q": "What is the field init shorthand?",
+      "options": [
+        "Writing `name` instead of `name: name` when a variable shares the field's name",
+        "A way to skip fields entirely",
+        "Automatically generating a constructor",
+        "Making all fields public"
+      ],
+      "answer": 0,
+      "explain": "When a variable has the same name as a field, you can write just `name` instead of `name: name`. Rust matches them up."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What must you provide when constructing a struct?",
+      "back": "Every field, by name: `User { id: 1, name: ..., active: true }`. Missing a field is a compile error."
+    },
+    {
+      "front": "How do you make a struct's fields changeable?",
+      "back": "Make the binding mutable: `let mut user = ...`. There's no per-field mut; it's the whole struct or nothing."
+    },
+    {
+      "front": "What is a tuple struct?",
+      "back": "A named type with positional (unnamed) fields: `struct Point(i32, i32);`. Access with .0, .1. Distinct type from a plain tuple."
+    },
+    {
+      "front": "Field init shorthand?",
+      "back": "When a variable's name matches the field, write `name` instead of `name: name`."
+    }
+  ]
+}

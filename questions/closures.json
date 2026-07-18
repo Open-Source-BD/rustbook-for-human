@@ -1,0 +1,68 @@
+{
+  "topic": "closures",
+  "title": "Closures",
+  "quiz": [
+    {
+      "q": "How do you write a closure that takes one parameter `x` and returns `x * 2`?",
+      "options": [
+        "(x) => x * 2",
+        "|x| x * 2",
+        "fn(x) x * 2",
+        "{x} x * 2"
+      ],
+      "answer": 1,
+      "explain": "Closure parameters go between pipes: |x| x * 2. A single-expression body needs no braces or return."
+    },
+    {
+      "q": "What can a closure do that a normal top-level `fn` cannot?",
+      "options": [
+        "Return a value",
+        "Take parameters",
+        "Capture variables from the surrounding scope",
+        "Be called more than once"
+      ],
+      "answer": 2,
+      "explain": "A closure can capture and use variables from the code around it. A plain fn only sees its own parameters."
+    },
+    {
+      "q": "What does the `move` keyword do in `move || println!(\"{}\", name)`?",
+      "options": [
+        "Runs the closure immediately",
+        "Makes the closure take ownership of the variables it captures",
+        "Moves the closure to another thread automatically",
+        "Prevents the closure from capturing anything"
+      ],
+      "answer": 1,
+      "explain": "move forces the closure to own its captured values instead of borrowing them — needed when the closure outlives the current scope, like in a thread."
+    },
+    {
+      "q": "By default, how does a closure capture a variable it uses?",
+      "options": [
+        "By taking ownership (move)",
+        "By borrowing it",
+        "By copying the whole program",
+        "It doesn't capture unless you use `capture`"
+      ],
+      "answer": 1,
+      "explain": "By default a closure borrows what it captures, so the original variable stays usable. Add move to take ownership."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a closure and how is it written?",
+      "back": "An unnamed inline function: |params| body. A one-expression body needs no braces or return, e.g. |x| x + 1."
+    },
+    {
+      "front": "What is a closure's superpower over a plain fn?",
+      "back": "It can capture variables from the surrounding scope and use them without passing them in as arguments."
+    },
+    {
+      "front": "How does a closure capture by default, and how do you change it?",
+      "back": "It borrows captured variables by default. Add the `move` keyword to make it take ownership (needed when it outlives the scope, e.g. threads)."
+    },
+    {
+      "front": "How does a function accept a closure as a parameter?",
+      "back": "Via the Fn / FnMut / FnOnce trait bounds, e.g. fn apply<F: Fn(i32) -> i32>(f: F) { ... }."
+    }
+  ]
+}

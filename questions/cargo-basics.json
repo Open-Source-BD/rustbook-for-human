@@ -1,0 +1,68 @@
+{
+  "topic": "cargo-basics",
+  "title": "Cargo basics",
+  "quiz": [
+    {
+      "q": "What does `cargo run` do?",
+      "options": [
+        "Only downloads dependencies",
+        "Builds your code and then runs the resulting program",
+        "Deletes the target folder",
+        "Uploads your crate to crates.io"
+      ],
+      "answer": 1,
+      "explain": "cargo run compiles your project and immediately runs the built program — two steps in one command."
+    },
+    {
+      "q": "Which file lists your project's dependencies?",
+      "options": [
+        "src/main.rs",
+        "Cargo.lock",
+        "Cargo.toml",
+        "target/debug"
+      ],
+      "answer": 2,
+      "explain": "Cargo.toml is the project manifest; dependencies go under its [dependencies] section (cargo add edits it for you)."
+    },
+    {
+      "q": "You want to quickly check that your code compiles, without producing a finished program. Which command is fastest for that?",
+      "options": [
+        "cargo check",
+        "cargo build --release",
+        "cargo clean",
+        "cargo new"
+      ],
+      "answer": 0,
+      "explain": "cargo check verifies the code compiles without generating the final executable, so it's faster — ideal while fixing errors."
+    },
+    {
+      "q": "What is the purpose of Cargo.lock?",
+      "options": [
+        "It stores your source code",
+        "It records the exact dependency versions so builds are repeatable",
+        "It locks the file so you can't edit main.rs",
+        "It is a password file for crates.io"
+      ],
+      "answer": 1,
+      "explain": "Cargo.lock pins the exact versions of every dependency, so the project builds identically on every machine. Commit it for applications."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Which single command builds and runs a Rust project?",
+      "back": "cargo run"
+    },
+    {
+      "front": "Where do a project's dependencies get listed?",
+      "back": "In Cargo.toml, under [dependencies]. You can add them with `cargo add <crate>`."
+    },
+    {
+      "front": "What does `cargo check` do differently from `cargo build`?",
+      "back": "It verifies the code compiles without producing the final executable, so it's faster — great while fixing errors."
+    },
+    {
+      "front": "What is Cargo.lock for, and should you commit it?",
+      "back": "It records exact dependency versions for repeatable builds. Commit it for applications."
+    }
+  ]
+}

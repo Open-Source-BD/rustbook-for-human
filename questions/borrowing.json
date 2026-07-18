@@ -1,0 +1,68 @@
+{
+  "topic": "borrowing",
+  "title": "Borrowing",
+  "quiz": [
+    {
+      "q": "What does passing `&s` (instead of `s`) to a function do?",
+      "options": [
+        "Copies the whole String so the function gets its own",
+        "Lends a reference to s without giving up ownership",
+        "Moves s into the function permanently",
+        "Deletes s after the function runs"
+      ],
+      "answer": 1,
+      "explain": "`&s` borrows: the function gets a reference and can use the value, but ownership stays with the caller, so s is still usable afterward."
+    },
+    {
+      "q": "You have a read-only borrow `&String` and try to call `.push('!')` on it. What happens?",
+      "options": [
+        "It works and changes the string",
+        "It compiles but does nothing at runtime",
+        "A compile error: you can't mutate through a `&` borrow",
+        "It makes a copy and mutates that"
+      ],
+      "answer": 2,
+      "explain": "A plain `&` borrow is read-only. To change the value you need a mutable borrow, `&mut`, and the original variable must be declared `mut`."
+    },
+    {
+      "q": "At one moment, for a single value, which combination of borrows is allowed?",
+      "options": [
+        "One `&mut` and two `&` at the same time",
+        "Two `&mut` at the same time",
+        "Either many `&` readers OR one `&mut` writer, never both",
+        "Any number of `&mut` writers"
+      ],
+      "answer": 2,
+      "explain": "The borrowing rule: you may have many read-only borrows, or exactly one mutable borrow, but never a mutable borrow alongside any other borrow."
+    },
+    {
+      "q": "What three things must line up to mutate a value through a function?",
+      "options": [
+        "The variable is `mut`, you pass `&mut`, the parameter is `&mut`",
+        "The variable is `const`, you pass `&`, the parameter is `String`",
+        "You call .clone(), pass by value, and return it",
+        "Nothing special; any `&` reference can mutate"
+      ],
+      "answer": 0,
+      "explain": "Mutable borrowing needs all three: the original declared `mut`, the value passed as `&mut`, and the parameter typed `&mut`."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is borrowing?",
+      "back": "Using a value through a reference (&) without taking ownership. The function accesses the value and the original owner keeps it."
+    },
+    {
+      "front": "Difference between `&` and `&mut`?",
+      "back": "`&` is a read-only borrow (look, don't change). `&mut` is a mutable borrow (allowed to change the value), and the original must be `mut`."
+    },
+    {
+      "front": "State the core borrowing rule.",
+      "back": "At any one time you can have many immutable (&) borrows OR exactly one mutable (&mut) borrow of a value — never both together."
+    },
+    {
+      "front": "Why prefer borrowing over .clone()?",
+      "back": "Borrowing moves and copies nothing — it's free. Cloning duplicates the whole value every time. Reach for & before reaching for .clone()."
+    }
+  ]
+}

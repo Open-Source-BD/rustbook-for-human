@@ -1,0 +1,68 @@
+{
+  "topic": "web-services",
+  "title": "Web services",
+  "quiz": [
+    {
+      "q": "In an Axum web server, what is a handler?",
+      "options": [
+        "A configuration file",
+        "An async function whose return value becomes the HTTP response",
+        "A database table",
+        "A special kind of macro"
+      ],
+      "answer": 1,
+      "explain": "A handler is an async fn mapped to a route. You return data (like &str or Json<T>) and the framework turns it into the HTTP response."
+    },
+    {
+      "q": "Why do web handlers use `async`?",
+      "options": [
+        "To make the code shorter",
+        "So a handler can pause on slow work (like a database call) while the server serves other requests",
+        "Because Axum requires all functions to be async",
+        "To avoid using structs"
+      ],
+      "answer": 1,
+      "explain": "async lets a handler yield while waiting, so one server can juggle thousands of connections. The Tokio runtime drives this."
+    },
+    {
+      "q": "What must be true of a type `T` for a handler to return `Json<T>`?",
+      "options": [
+        "T must be an integer",
+        "T must implement `Serialize` (usually via `#[derive(Serialize)]`)",
+        "T must be async",
+        "T must be a String"
+      ],
+      "answer": 1,
+      "explain": "Json<T> serializes T to JSON, so T must implement Serialize — commonly by adding #[derive(Serialize)] to the struct."
+    },
+    {
+      "q": "Why is doing slow blocking work inside an async handler a problem?",
+      "options": [
+        "It uses too much disk",
+        "It freezes the thread so other requests can't run",
+        "It changes the HTTP status code",
+        "It's actually fine and recommended"
+      ],
+      "answer": 1,
+      "explain": "Blocking work stalls the async thread, starving other requests. Use async equivalents or offload heavy work to a dedicated thread."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is the shared shape of every web server?",
+      "back": "A loop of request in, response out. A route (path + method) maps to a handler function that produces the response."
+    },
+    {
+      "front": "What is an Axum handler, and how does it produce a response?",
+      "back": "An `async fn` mapped to a route. Its return value (e.g. &str, String, Json<T>) becomes the HTTP response — the framework serializes it."
+    },
+    {
+      "front": "What starts the async runtime for an Axum server?",
+      "back": "`#[tokio::main]` on `async fn main`. Without a runtime, async code never runs."
+    },
+    {
+      "front": "How do handlers share a resource like a database connection pool?",
+      "back": "Build it once at startup, attach with `.with_state(state)`, and receive it in handlers via `State<AppState>` — never one connection per request."
+    }
+  ]
+}

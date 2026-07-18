@@ -1,0 +1,68 @@
+{
+  "topic": "comments-and-documentation",
+  "title": "Comments and documentation",
+  "quiz": [
+    {
+      "q": "Which comment style creates documentation that `cargo doc` turns into a website?",
+      "options": [
+        "// two slashes",
+        "/* block comment */",
+        "/// three slashes",
+        "# hash"
+      ],
+      "answer": 2,
+      "explain": "`///` is a doc comment that describes the item below it and feeds `cargo doc`. `//` is just an ordinary human note."
+    },
+    {
+      "q": "What is the best thing to explain in a comment?",
+      "options": [
+        "What each line does, restating the code",
+        "Why the code is there — the reasoning or a tricky edge case",
+        "The author's name on every line",
+        "The type of every variable"
+      ],
+      "answer": 1,
+      "explain": "Good comments explain WHY, not WHAT. The code already shows what it does; the comment should add reasoning the code can't."
+    },
+    {
+      "q": "Where must a `///` doc comment be placed?",
+      "options": [
+        "At the end of any line",
+        "Directly above the item it documents (a function, struct, etc.)",
+        "Anywhere, it doesn't matter",
+        "Only inside main"
+      ],
+      "answer": 1,
+      "explain": "A `///` must sit directly above the item it describes. Floating with nothing below it is an error; use `//!` for inner (module/file) docs."
+    },
+    {
+      "q": "What is special about code examples inside doc comments?",
+      "options": [
+        "They are ignored entirely",
+        "They are run as tests by `cargo test`, so they can't go stale",
+        "They slow the program down",
+        "They must be written in another language"
+      ],
+      "answer": 1,
+      "explain": "Doc-comment examples are compiled and run as tests, which keeps the documentation honest and up to date."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "`//` vs `///`?",
+      "back": "`//` is an ordinary comment (a human note the compiler ignores). `///` is a doc comment that documents the item below it and feeds `cargo doc`."
+    },
+    {
+      "front": "What should a good comment explain?",
+      "back": "The WHY (reasoning, tricky cases), not the WHAT. Don't restate what the code already shows."
+    },
+    {
+      "front": "What does `//!` do?",
+      "back": "It documents the thing it's INSIDE (a whole module or file), rather than the item below it. Used at the top of files."
+    },
+    {
+      "front": "What happens to code inside a doc-comment example?",
+      "back": "It's run as a test by `cargo test`, so examples stay correct."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "topic": "iterators",
+  "title": "Iterators",
+  "quiz": [
+    {
+      "q": "What does it mean that iterator adapters like `map` and `filter` are 'lazy'?",
+      "options": [
+        "They run slowly",
+        "They only describe work and do nothing until a consumer runs the chain",
+        "They skip every other item",
+        "They cache results forever"
+      ],
+      "answer": 1,
+      "explain": "Adapters build a plan but touch no items until a consumer (collect, sum, for, ...) pulls values through."
+    },
+    {
+      "q": "Which of these actually runs an iterator chain?",
+      "options": [
+        ".map(|x| x * 2)",
+        ".filter(|x| *x > 0)",
+        ".collect()",
+        ".rev()"
+      ],
+      "answer": 2,
+      "explain": "collect is a consumer — it drives the chain and gathers results. map, filter, and rev are lazy adapters that only describe work."
+    },
+    {
+      "q": "What is the difference between `.iter()` and `.into_iter()` on a Vec?",
+      "options": [
+        "iter() borrows each item; into_iter() takes ownership and consumes the Vec",
+        "They are the same",
+        "iter() is faster but less safe",
+        "into_iter() only works on numbers"
+      ],
+      "answer": 0,
+      "explain": "iter() yields &T (borrows), leaving the Vec usable. into_iter() yields owned T and consumes the collection."
+    },
+    {
+      "q": "Why does `let v = nums.iter().map(|n| n * 2);` (with no consumer) not double anything?",
+      "options": [
+        "map is broken",
+        "Adapters are lazy — without a consumer, no work runs",
+        "You must use a for loop instead of map",
+        "nums was empty"
+      ],
+      "answer": 1,
+      "explain": "map is a lazy adapter; it just builds a plan. Add a consumer like .collect() or .sum() to actually run it."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does 'iterators are lazy' mean?",
+      "back": "Adapters (map, filter) only describe work. Nothing runs until a consumer (collect, sum, count, for) pulls items through the chain."
+    },
+    {
+      "front": "Name some iterator consumers.",
+      "back": "collect (into a collection), sum, count, for loops. They finish the chain and produce a value or side effect."
+    },
+    {
+      "front": "iter() vs iter_mut() vs into_iter()?",
+      "back": "iter() borrows (&T), iter_mut() borrows mutably (&mut T) to edit in place, into_iter() takes ownership (T) and consumes the collection."
+    },
+    {
+      "front": "Why does collect() sometimes need a type annotation?",
+      "back": "collect can build many kinds of collection, so the compiler needs to know which: e.g. `let v: Vec<i32> = it.collect();`."
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "topic": "concurrency",
+  "title": "Concurrency",
+  "quiz": [
+    {
+      "q": "What does `handle.join()` do after `thread::spawn`?",
+      "options": [
+        "Starts a second thread",
+        "Waits (pauses) until that thread finishes",
+        "Cancels the thread immediately",
+        "Merges two threads into one core"
+      ],
+      "answer": 1,
+      "explain": "`.join()` blocks the current thread until the spawned thread completes. Without it, main might end and cut the worker off mid-task."
+    },
+    {
+      "q": "Why do you often need `move` in `thread::spawn(move || { ... })`?",
+      "options": [
+        "It makes the thread run faster",
+        "It gives the thread ownership of the values it uses, so they can't be dropped out from under it",
+        "It is just decoration",
+        "It moves the thread to another CPU core"
+      ],
+      "answer": 1,
+      "explain": "`move` transfers ownership of captured values into the thread. Otherwise the compiler can't prove the borrowed data outlives the thread."
+    },
+    {
+      "q": "You need several threads to co-own and mutate one counter safely. What do you reach for?",
+      "options": [
+        "`Rc<RefCell<i32>>`",
+        "`Arc<Mutex<i32>>`",
+        "A plain `&mut i32` shared around",
+        "`Box<i32>`"
+      ],
+      "answer": 1,
+      "explain": "`Arc` provides thread-safe shared ownership and `Mutex` provides one-at-a-time mutation. `Rc`/`RefCell` are single-threaded and won't compile across threads."
+    },
+    {
+      "q": "What do the standard channel functions in `std::sync::mpsc` give you?",
+      "options": [
+        "A shared mutable global variable",
+        "A pipe: a sender (tx) and receiver (rx) for passing messages between threads",
+        "A way to disable the borrow checker",
+        "Automatic parallelism with no threads"
+      ],
+      "answer": 1,
+      "explain": "`mpsc::channel()` returns a (tx, rx) pair. Threads communicate by sending messages down the pipe rather than sharing memory directly — the safest sharing style."
+    }
+  ],
+  "flashcards": [
+    { "front": "Start work on a new thread?", "back": "`thread::spawn(|| { ... })` returns a JoinHandle; call `.join()` to wait for it." },
+    { "front": "`Rc` vs `Arc`?", "back": "`Rc` is shared ownership for a single thread (faster); `Arc` is the thread-safe version for sharing across threads." },
+    { "front": "Safest way for threads to communicate?", "back": "Channels (`std::sync::mpsc`) — send messages through a tx/rx pipe instead of sharing mutable memory." },
+    { "front": "What do `Send` and `Sync` mean?", "back": "`Send` = safe to move to another thread; `Sync` = safe to share by reference across threads. The compiler checks them automatically." }
+  ]
+}

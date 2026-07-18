@@ -1,0 +1,68 @@
+{
+  "topic": "traits",
+  "title": "Traits",
+  "quiz": [
+    {
+      "q": "What is a trait in Rust?",
+      "options": [
+        "A list of behavior (method signatures) a type promises to provide",
+        "A parent class that other types inherit fields from",
+        "A special kind of variable that holds many values",
+        "A macro that generates code at compile time"
+      ],
+      "answer": 0,
+      "explain": "A trait describes behavior — a set of methods a type must provide. It's a capability, not a class with fields."
+    },
+    {
+      "q": "You defined `trait Greet` and a `Dog` struct, but `dog.hello()` gives 'no method named hello'. What's missing?",
+      "options": [
+        "You need to make Dog mutable with `mut`",
+        "You need an `impl Greet for Dog { ... }` block",
+        "You need to add `#[derive(Greet)]`",
+        "Traits can't be used with structs"
+      ],
+      "answer": 1,
+      "explain": "Defining the trait only states the promise. You must write `impl Greet for Dog` to say how Dog actually keeps it."
+    },
+    {
+      "q": "What does the parameter type `&impl Greet` mean?",
+      "options": [
+        "A reference to the Greet trait itself",
+        "A reference to some type that implements Greet",
+        "A brand-new Greet value created inline",
+        "Only the Dog type is allowed"
+      ],
+      "answer": 1,
+      "explain": "`&impl Greet` accepts a reference to any type that implements Greet, so one function works for all such types."
+    },
+    {
+      "q": "What is a default method in a trait?",
+      "options": [
+        "A method that can only be called once",
+        "A method every type must override",
+        "A method with a body in the trait, so types get it for free unless they override it",
+        "A method that runs automatically at program start"
+      ],
+      "answer": 2,
+      "explain": "A default method provides a body inside the trait. Implementing types inherit it automatically and may override it if they want."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a trait?",
+      "back": "A named list of method signatures — a promise of behavior that a type provides by implementing it. Think 'can do', not 'is a'."
+    },
+    {
+      "front": "How do you make a type keep a trait's promise?",
+      "back": "Write `impl TraitName for TypeName { ... }` and provide the required methods."
+    },
+    {
+      "front": "How do you write one function that accepts any type implementing a trait?",
+      "back": "Use a trait bound, e.g. `fn f(x: &impl Greet)` or `fn f<T: Greet>(x: &T)`."
+    },
+    {
+      "front": "Are traits the same as class inheritance?",
+      "back": "No. Traits carry behavior, not fields, and a type can implement many unrelated traits. They express 'can do', not 'is a kind of'."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "topic": "docs-and-rustfmt",
+  "title": "Docs and rustfmt",
+  "quiz": [
+    {
+      "q": "Which comment style becomes documentation that `cargo doc` collects?",
+      "options": [
+        "// two slashes",
+        "/// three slashes (a doc comment)",
+        "/* block comment */",
+        "# hash comment"
+      ],
+      "answer": 1,
+      "explain": "`///` is a doc comment attached to the item below it, which cargo doc turns into documentation. `//` is a normal comment and is ignored by cargo doc."
+    },
+    {
+      "q": "What does `cargo fmt` do?",
+      "options": [
+        "Runs your tests",
+        "Reformats your code to the standard Rust style automatically",
+        "Publishes your crate",
+        "Checks for logic bugs"
+      ],
+      "answer": 1,
+      "explain": "cargo fmt rewrites your code in the official style (spacing, indentation, wrapping) so everyone's code looks the same. It's not about logic."
+    },
+    {
+      "q": "What happens to code examples written inside doc comments when you run `cargo test`?",
+      "options": [
+        "They are ignored",
+        "They actually run as doctests and their assertions are checked",
+        "They are deleted",
+        "They cause a compile error"
+      ],
+      "answer": 1,
+      "explain": "Code blocks in doc comments are doctests: cargo test runs them and checks their assertions, so documentation examples can't silently go stale."
+    },
+    {
+      "q": "What does the `//!` comment style document?",
+      "options": [
+        "The item directly below it",
+        "The enclosing module or file it sits inside",
+        "Nothing — it's a syntax error",
+        "Only test functions"
+      ],
+      "answer": 1,
+      "explain": "`//!` documents the module/file it's inside (put at the top of a file), while `///` documents the item that follows it."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is the difference between `//` and `///`?",
+      "back": "`//` is a normal comment (ignored by cargo doc). `///` is a doc comment that cargo doc turns into documentation for the item below it."
+    },
+    {
+      "front": "What does `cargo fmt` do, and why use it?",
+      "back": "Reformats your whole project to the standard Rust style automatically. It ends style debates and keeps version-control diffs about real changes."
+    },
+    {
+      "front": "What are doctests?",
+      "back": "Code examples inside doc comments. `cargo test` runs them and checks their assertions, so docs stay correct."
+    },
+    {
+      "front": "How do you generate and view your project's docs?",
+      "back": "`cargo doc --open` builds a browsable HTML site for your crate and dependencies and opens it in your browser."
+    }
+  ]
+}

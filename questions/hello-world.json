@@ -1,0 +1,53 @@
+{
+  "topic": "hello-world",
+  "title": "Hello, world",
+  "quiz": [
+    {
+      "q": "Where does a Rust program start running?",
+      "options": [
+        "At the first line of the file",
+        "At the fn main() function",
+        "At whichever function is alphabetically first",
+        "Wherever you put println!"
+      ],
+      "answer": 1,
+      "explain": "Execution always begins at fn main() — it's the entry point, the 'front door' of the program."
+    },
+    {
+      "q": "Why does println! have an exclamation mark?",
+      "options": [
+        "It makes the text louder",
+        "It marks the end of the line",
+        "Because println! is a macro, not a regular function",
+        "It is optional decoration"
+      ],
+      "answer": 2,
+      "explain": "The ! tells you it's a macro. If you drop it, the compiler can't find a function named 'println' and errors out."
+    },
+    {
+      "q": "What does {} do inside println!(\"Day {}\", day)?",
+      "options": [
+        "It prints literal curly braces",
+        "It is a placeholder that gets filled with the value of `day`",
+        "It starts a new code block",
+        "Nothing, it is ignored"
+      ],
+      "answer": 1,
+      "explain": "{} is a placeholder. Rust substitutes the matching value (here, `day`) into that spot."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is the entry point of every Rust executable?",
+      "back": "fn main() — the program always starts there."
+    },
+    {
+      "front": "What does the ! in println! mean?",
+      "back": "It means println! is a macro (not a normal function). Macros are called with a ! after the name."
+    },
+    {
+      "front": "How do you print the value of a variable x inside text?",
+      "back": "Use a {} placeholder: println!(\"value is {}\", x);  or name it inline: println!(\"value is {x}\");"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "topic": "reading-errors",
+  "title": "Reading compiler errors",
+  "quiz": [
+    {
+      "q": "When several errors appear at once, which should you usually fix first?",
+      "options": [
+        "The last one in the list",
+        "The first one, then rebuild",
+        "The one with the longest message",
+        "A random one, they're all independent"
+      ],
+      "answer": 1,
+      "explain": "One early mistake often causes a cascade of later errors. Fix the first, rebuild, and many others often disappear."
+    },
+    {
+      "q": "In an error message, what does the `--> src/main.rs:4:20` line tell you?",
+      "options": [
+        "The number of errors found",
+        "The file, line, and column where the problem is",
+        "The version of the compiler",
+        "How long the build took"
+      ],
+      "answer": 1,
+      "explain": "The --> line is the location: file src/main.rs, line 4, column 20 — where the compiler wants you to look first."
+    },
+    {
+      "q": "What's the difference between a `warning` and an `error`?",
+      "options": [
+        "Warnings stop the build; errors don't",
+        "They are exactly the same thing",
+        "A warning still compiles and runs; an error stops the build",
+        "Errors are only shown in release mode"
+      ],
+      "answer": 2,
+      "explain": "A warning compiles and runs but flags something suspicious. Only an error blocks the build."
+    },
+    {
+      "q": "You see a line starting with `help:` suggesting a change. What should you do?",
+      "options": [
+        "Ignore it and guess your own fix",
+        "Try the suggested fix first — it's usually correct",
+        "Delete the whole function",
+        "Run cargo clean"
+      ],
+      "answer": 1,
+      "explain": "Rust's help: suggestions are right most of the time. Try the suggestion before guessing at other changes."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "When you get many compiler errors, which one do you fix first?",
+      "back": "The first one, then rebuild — later errors are often just fallout from the first."
+    },
+    {
+      "front": "What does the `-->` line in a Rust error tell you?",
+      "back": "The location of the problem: file, line, and column (e.g. src/main.rs:4:20)."
+    },
+    {
+      "front": "Does a `warning` stop your program from building?",
+      "back": "No. A warning still compiles and runs; only an `error` blocks the build."
+    },
+    {
+      "front": "How do you get a longer explanation of an error code like E0382?",
+      "back": "Run `rustc --explain E0382`, or check the online error index."
+    }
+  ]
+}

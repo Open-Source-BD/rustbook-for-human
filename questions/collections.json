@@ -1,0 +1,68 @@
+{
+  "topic": "collections",
+  "title": "Collections",
+  "quiz": [
+    {
+      "q": "What is a `Vec<T>`?",
+      "options": [
+        "A fixed-size array decided at compile time",
+        "A growable, ordered list of values of the same type",
+        "A lookup table that finds values by key",
+        "A borrowed view into text"
+      ],
+      "answer": 1,
+      "explain": "Vec<T> is a growable, ordered list. You add to the end with .push() and index from 0."
+    },
+    {
+      "q": "What happens with `v[99]` when the vector only has 3 items?",
+      "options": [
+        "It returns None",
+        "It returns 0",
+        "It panics at runtime with 'index out of bounds'",
+        "It grows the vector to 100 items"
+      ],
+      "answer": 2,
+      "explain": "Indexing out of bounds panics. Use v.get(99), which returns an Option, when the index might not exist."
+    },
+    {
+      "q": "How do you find a value in a `HashMap` by its key?",
+      "options": [
+        "By its numeric position, like map[0]",
+        "With .get(key), which returns an Option",
+        "You can't look up individual keys",
+        "By looping until you reach the right index"
+      ],
+      "answer": 1,
+      "explain": "A HashMap is keyed, not positional. .get(key) returns Some(value) if the key exists, or None if it doesn't."
+    },
+    {
+      "q": "Why does `let scores = Vec::new(); scores.push(10);` fail to compile?",
+      "options": [
+        "Vec::new() is not a real function",
+        "push needs the vector to be declared `let mut`",
+        "You must specify the type as Vec<i32>",
+        "push only works on HashMap"
+      ],
+      "answer": 1,
+      "explain": "push modifies the vector, so it must be mutable: `let mut scores = Vec::new();`."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a Vec<T> and how do you add to it?",
+      "back": "A growable, ordered list of same-typed values. Add to the end with .push(); index from 0. Must be `let mut` to modify."
+    },
+    {
+      "front": "How do you safely read an index that might not exist?",
+      "back": "Use .get(i), which returns Option (Some or None). Plain v[i] panics if the index is out of bounds."
+    },
+    {
+      "front": "What is a HashMap<K, V> for?",
+      "back": "Looking up values by a key you choose. Add pairs with .insert(key, value); read with .get(key). Remember `use std::collections::HashMap;`."
+    },
+    {
+      "front": "How do you print a whole Vec or HashMap?",
+      "back": "Use the debug placeholder {:?}, e.g. println!(\"{:?}\", v). Plain {} only works for single simple values."
+    }
+  ]
+}

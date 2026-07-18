@@ -1,0 +1,68 @@
+{
+  "topic": "pattern-matching",
+  "title": "Pattern matching",
+  "quiz": [
+    {
+      "q": "What does it mean that a `match` must be exhaustive?",
+      "options": [
+        "It must have exactly one arm",
+        "It must cover every possible value — handle all cases or add `_`",
+        "It must be slow and thorough",
+        "It can only match numbers"
+      ],
+      "answer": 1,
+      "explain": "Rust requires a match to handle every possible value. Miss a case and it won't compile — use `_` as a catch-all for the rest."
+    },
+    {
+      "q": "In the arm `Some(n) => ...`, what is `n`?",
+      "options": [
+        "A comparison against an existing variable n",
+        "A new name that captures the value inside Some (destructuring)",
+        "The number of the arm",
+        "Always zero"
+      ],
+      "answer": 1,
+      "explain": "`n` is a fresh name that binds the value held inside Some. This is destructuring — the pattern branches and extracts the inner data."
+    },
+    {
+      "q": "When is `if let` a better choice than `match`?",
+      "options": [
+        "When you need to handle every variant",
+        "When you only care about one variant and want to ignore the rest",
+        "Never; it's deprecated",
+        "Only inside loops"
+      ],
+      "answer": 1,
+      "explain": "`if let` is the compact form for handling a single pattern. A full match with a throwaway `_ => ()` is clunkier for that case."
+    },
+    {
+      "q": "Where should the catch-all `_` arm go in a match?",
+      "options": [
+        "First, so it's checked first",
+        "Last, because arms are checked top to bottom",
+        "It doesn't matter",
+        "In the middle"
+      ],
+      "answer": 1,
+      "explain": "Arms are checked top to bottom. A `_` placed early swallows everything below it, making later arms unreachable. Keep it last."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does 'exhaustive match' mean?",
+      "back": "A match must cover every possible value. Handle all cases, or add `_` as a catch-all — otherwise it won't compile."
+    },
+    {
+      "front": "What does destructuring do in a match arm?",
+      "back": "It mirrors the shape of the data and binds the inner pieces to new names, e.g. `Some(n)` or `Move { x, y }`. Branch and extract in one move."
+    },
+    {
+      "front": "When to use `if let` instead of `match`?",
+      "back": "When you only care about one variant and want to ignore the rest — it's the compact single-pattern form."
+    },
+    {
+      "front": "Where do patterns work besides `match`?",
+      "back": "In `let` bindings (`let (a, b) = pair`), function arguments, and `if let`. Same 'shapes with names' idea everywhere."
+    }
+  ]
+}

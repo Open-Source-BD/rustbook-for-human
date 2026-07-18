@@ -1,0 +1,68 @@
+{
+  "topic": "control-flow",
+  "title": "Control flow",
+  "quiz": [
+    {
+      "q": "What must an `if` condition be in Rust?",
+      "options": [
+        "Any non-zero number is true",
+        "A real bool (true or false)",
+        "A string that says \"true\"",
+        "Anything at all"
+      ],
+      "answer": 1,
+      "explain": "Rust requires an actual bool. It does not treat numbers as true/false, so `if count` fails — write `if count != 0`."
+    },
+    {
+      "q": "What values does the range `1..4` produce in a for loop?",
+      "options": [
+        "1, 2, 3, 4",
+        "1, 2, 3",
+        "2, 3, 4",
+        "0, 1, 2, 3"
+      ],
+      "answer": 1,
+      "explain": "`1..4` excludes the end, giving 1, 2, 3. To include 4, use the inclusive range `1..=4`."
+    },
+    {
+      "q": "Which statement about `if` in Rust is true?",
+      "options": [
+        "if can only be a statement, never produce a value",
+        "if is an expression; you can write `let x = if c { 1 } else { 2 };`",
+        "if always returns the number 1 when true",
+        "if branches can each return a different type"
+      ],
+      "answer": 1,
+      "explain": "`if` is an expression and can produce a value, but every branch must return the same type."
+    },
+    {
+      "q": "Which loop is best for walking through each item of a collection?",
+      "options": [
+        "loop",
+        "while",
+        "for",
+        "if"
+      ],
+      "answer": 2,
+      "explain": "`for item in collection` hands you each element directly and can't run off the end, making it the safest, most common choice."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Can you write `if count { ... }` where count is a number?",
+      "back": "No. Conditions must be a real bool. Write the comparison, e.g. `if count != 0 { ... }`."
+    },
+    {
+      "front": "Difference between `1..4` and `1..=4`?",
+      "back": "`1..4` excludes the end → 1,2,3. `1..=4` includes it → 1,2,3,4."
+    },
+    {
+      "front": "Name Rust's three loops and their use.",
+      "back": "loop = forever until break; while = while a condition holds; for = walk each item of a collection."
+    },
+    {
+      "front": "Is `if` an expression in Rust?",
+      "back": "Yes — it can produce a value: `let x = if c { 1 } else { 2 };`. All branches must share one type."
+    }
+  ]
+}

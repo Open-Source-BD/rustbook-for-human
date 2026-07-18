@@ -1,0 +1,68 @@
+{
+  "topic": "ownership",
+  "title": "Ownership",
+  "quiz": [
+    {
+      "q": "After `let s2 = s1;` where s1 is a String, what happens to s1?",
+      "options": [
+        "s1 still holds a copy of the string",
+        "s1 is moved from and can no longer be used",
+        "s1 and s2 share the string and both stay valid",
+        "s1 is set to an empty string \"\""
+      ],
+      "answer": 1,
+      "explain": "For an owning type like String, assignment moves ownership. s1 no longer owns anything, so using it is a compile error."
+    },
+    {
+      "q": "Why can you still use `x` after `let y = x;` when x is an integer?",
+      "options": [
+        "Integers are special-cased by the compiler",
+        "Integers are Copy types, so x is copied, not moved",
+        "It's actually a bug and will warn you",
+        "Because y is a reference to x"
+      ],
+      "answer": 1,
+      "explain": "Small stack values like integers implement Copy, so they are duplicated instead of moved. Both x and y remain valid."
+    },
+    {
+      "q": "When is a value's memory freed in Rust?",
+      "options": [
+        "When a garbage collector decides to run",
+        "When you call free() yourself",
+        "When its owner goes out of scope",
+        "Never, until the program exits"
+      ],
+      "answer": 2,
+      "explain": "Rust drops a value (frees its memory) automatically when the owning variable goes out of scope — no GC, no manual free."
+    },
+    {
+      "q": "You passed a String into a function and now the compiler says it was 'moved'. What's the cheapest correct fix if you still need it afterward?",
+      "options": [
+        "Call .clone() when passing it, or borrow it with &",
+        "Declare the variable twice",
+        "Add the `mut` keyword",
+        "Wrap it in println!"
+      ],
+      "answer": 0,
+      "explain": "Passing by value moves the String. Clone makes a separate copy; borrowing with & lends it without moving (and is cheaper)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "State the three ownership rules.",
+      "back": "1) Each value has one owner. 2) Only one owner at a time. 3) When the owner goes out of scope, the value is dropped (freed)."
+    },
+    {
+      "front": "What does 'move' mean in Rust?",
+      "back": "Assigning or passing an owning value (String, Vec, ...) transfers ownership to the new place. The original variable can no longer be used."
+    },
+    {
+      "front": "Which types are copied instead of moved?",
+      "back": "Copy types: simple fixed-size stack values like integers, bool, and char. `let y = x;` copies them, so x stays usable."
+    },
+    {
+      "front": "How do you use a value without giving up ownership?",
+      "back": "Borrow it with a reference (&). That lends access without moving, so the original owner keeps the value. (See the Borrowing lesson.)"
+    }
+  ]
+}

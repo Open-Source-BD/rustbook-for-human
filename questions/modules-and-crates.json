@@ -1,0 +1,68 @@
+{
+  "topic": "modules-and-crates",
+  "title": "Modules and crates",
+  "quiz": [
+    {
+      "q": "What is a crate in Rust?",
+      "options": [
+        "A single function",
+        "The unit Rust compiles — a package, either a runnable binary or a reusable library",
+        "A type of variable",
+        "A folder on your desktop"
+      ],
+      "answer": 1,
+      "explain": "A crate is the compilation unit: a binary crate runs (has main), a library crate is used by other crates."
+    },
+    {
+      "q": "By default, an item inside a module is...",
+      "options": [
+        "Public to everyone",
+        "Private — only visible inside its own module",
+        "Deleted at compile time",
+        "Automatically exported to the internet"
+      ],
+      "answer": 1,
+      "explain": "Everything is private by default. You add `pub` to expose an item to code outside its module."
+    },
+    {
+      "q": "How do you call a function `parse` from inside a module named `parser`?",
+      "options": [
+        "parser.parse()",
+        "parser->parse()",
+        "parser::parse()",
+        "parse.parser()"
+      ],
+      "answer": 2,
+      "explain": "You reach into a module with the `::` path separator: `parser::parse()`. A dot is for method calls and field access."
+    },
+    {
+      "q": "What does the `use` keyword do?",
+      "options": [
+        "Declares a new module",
+        "Brings a name into scope so you can type its short form",
+        "Deletes a module",
+        "Makes an item public"
+      ],
+      "answer": 1,
+      "explain": "`use` imports a name so you can refer to it directly, e.g. `use parser::parse;` then just `parse(...)`. It does not create a module."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Binary crate vs library crate?",
+      "back": "Binary crate has `main` and runs. Library crate has no main; it offers functions/types for other crates to use."
+    },
+    {
+      "front": "What's the default visibility of items in a module?",
+      "back": "Private — visible only inside their own module. Add `pub` to expose them."
+    },
+    {
+      "front": "How do you reach into a module?",
+      "back": "With `::` (the path separator): `parser::parse()`. A dot is for methods/fields, not modules."
+    },
+    {
+      "front": "`mod` vs `use`?",
+      "back": "`mod` declares a module (creates it or points at its file). `use` just shortens an existing name so you can type less."
+    }
+  ]
+}

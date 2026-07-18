@@ -1,0 +1,68 @@
+{
+  "topic": "ffi",
+  "title": "FFI",
+  "quiz": [
+    {
+      "q": "Why must every call to a C function declared in an `extern \"C\"` block be inside `unsafe`?",
+      "options": [
+        "Because C is an older language than Rust",
+        "Because Rust cannot verify the foreign function upholds its safety guarantees",
+        "Because `unsafe` makes FFI calls run faster",
+        "Because the compiler needs `unsafe` to link the program"
+      ],
+      "answer": 1,
+      "explain": "Rust's safety checks stop at the FFI border. The compiler can't verify what C does, so you take responsibility with `unsafe`."
+    },
+    {
+      "q": "What does `#[repr(C)]` on a struct do?",
+      "options": [
+        "Makes the struct serialize to JSON",
+        "Forces C-compatible field layout so C reads the fields at the right offsets",
+        "Marks the struct as unsafe to use",
+        "Automatically frees the struct's memory"
+      ],
+      "answer": 1,
+      "explain": "Without `#[repr(C)]`, Rust may reorder or pad fields differently than C, corrupting data across the boundary. `#[repr(C)]` fixes the layout to match C."
+    },
+    {
+      "q": "Why do you add `#[unsafe(no_mangle)]` (or `#[no_mangle]`) when exposing a Rust function to C?",
+      "options": [
+        "To make the function public",
+        "To keep the symbol name unscrambled so C can find it by name",
+        "To make the function async",
+        "To enable serde serialization"
+      ],
+      "answer": 1,
+      "explain": "Rust normally mangles function names into long unique symbols. `no_mangle` keeps the plain name so C's linker can find it."
+    },
+    {
+      "q": "Why can't you pass a Rust `String` directly to a C function expecting a C string?",
+      "options": [
+        "Rust Strings are encrypted",
+        "A Rust String isn't zero-terminated and can contain interior nulls",
+        "C strings are always longer",
+        "Rust Strings can't leave the stack"
+      ],
+      "answer": 1,
+      "explain": "C strings end in a `\\0` and Rust `String`s don't. You convert with `CString` (Rust->C) and `CStr` (C->Rust)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does FFI stand for and what is it for?",
+      "back": "Foreign Function Interface — calling code in another language (usually C) from Rust, or exposing Rust functions to C."
+    },
+    {
+      "front": "What does `extern \"C\" { ... }` do?",
+      "back": "Declares foreign functions (name and signature) so Rust can call them. The \"C\" names the ABI. Calls are always unsafe."
+    },
+    {
+      "front": "What attribute forces C-compatible struct layout, and why is it needed?",
+      "back": "`#[repr(C)]`. Without it, Rust may reorder/pad fields differently than C, corrupting data that crosses the boundary."
+    },
+    {
+      "front": "Who frees memory that Rust allocates and hands to C?",
+      "back": "There's no borrow checker across FFI — you must decide and document the ownership rule. Freeing on both sides causes double-free crashes."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "topic": "generics",
+  "title": "Generics",
+  "quiz": [
+    {
+      "q": "In `fn first<T>(items: &[T]) -> &T`, what is `T`?",
+      "options": [
+        "A specific type named T defined elsewhere",
+        "A placeholder for a type, chosen when the function is called",
+        "A variable holding a runtime value",
+        "The name of a trait"
+      ],
+      "answer": 1,
+      "explain": "T is a generic type parameter — a placeholder. The compiler fills it with a concrete type each time you call the function."
+    },
+    {
+      "q": "Why does a generic function often need a trait bound like `<T: PartialOrd>`?",
+      "options": [
+        "To make the code run faster at runtime",
+        "Because T could be any type, so you may only use abilities you promise it has",
+        "Bounds are optional decoration with no effect",
+        "To turn the generic into a trait object"
+      ],
+      "answer": 1,
+      "explain": "Inside a generic, T might be anything, so the compiler only allows operations you guarantee via bounds. `PartialOrd` promises T can be compared with `>`."
+    },
+    {
+      "q": "What does the `+` mean in `<T: PartialOrd + Copy>`?",
+      "options": [
+        "T is either PartialOrd or Copy",
+        "Add PartialOrd and Copy together numerically",
+        "T must implement both PartialOrd and Copy",
+        "It's a syntax error"
+      ],
+      "answer": 2,
+      "explain": "The `+` combines bounds: T must satisfy PartialOrd AND Copy."
+    },
+    {
+      "q": "Why are Rust generics called 'zero-cost'?",
+      "options": [
+        "They are free to type on the keyboard",
+        "The compiler generates specialized code per concrete type, so there's no runtime penalty",
+        "They use a garbage collector to manage memory",
+        "They only work with numbers"
+      ],
+      "answer": 1,
+      "explain": "For each concrete type used, the compiler stamps out a specialized version (monomorphization), so generic code runs as fast as hand-written specific code."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a generic type parameter like T?",
+      "back": "A placeholder for a type, chosen when the code is used. Declared in angle brackets: fn name<T>(...) or struct Name<T>."
+    },
+    {
+      "front": "Why do you add trait bounds to a generic?",
+      "back": "Inside a generic, T could be any type, so you may only use abilities you promise it has. Bounds like <T: PartialOrd> grant those abilities."
+    },
+    {
+      "front": "What does <T: PartialOrd + Copy> mean?",
+      "back": "T must implement both PartialOrd (comparable) and Copy (cheaply duplicated). The + means 'and also'."
+    },
+    {
+      "front": "Do generics slow down your program?",
+      "back": "No — they are zero-cost. The compiler generates a specialized version per concrete type, so runtime speed matches hand-written code."
+    }
+  ]
+}

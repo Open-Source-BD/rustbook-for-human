@@ -1,0 +1,68 @@
+{
+  "topic": "cli-apps",
+  "title": "CLI apps",
+  "quiz": [
+    {
+      "q": "In `std::env::args()`, what is the first element (`args[0]`)?",
+      "options": [
+        "The first flag the user passed",
+        "The program's own name",
+        "Always an empty string",
+        "The current directory"
+      ],
+      "answer": 1,
+      "explain": "args[0] is the program name. The first real user argument is args[1]."
+    },
+    {
+      "q": "Why prefer `args.get(1)` over `args[1]` to read the first argument?",
+      "options": [
+        "It's faster",
+        "`args[1]` panics if the argument is missing, while `.get(1)` returns an Option you can handle",
+        "`.get(1)` returns a reference and `args[1]` doesn't",
+        "There is no difference"
+      ],
+      "answer": 1,
+      "explain": "Indexing out of range panics. `.get(1)` gives Some/None so a missing argument becomes a case you handle, not a crash."
+    },
+    {
+      "q": "Where should a CLI print error and status messages?",
+      "options": [
+        "stdout, using println!",
+        "stderr, using eprintln!",
+        "A log file only",
+        "It doesn't matter"
+      ],
+      "answer": 1,
+      "explain": "stdout is for the real result (so it can be piped/redirected cleanly); errors and status go to stderr via eprintln!."
+    },
+    {
+      "q": "What exit code should a CLI return when it fails?",
+      "options": [
+        "0",
+        "Any non-zero value",
+        "Always 200",
+        "It can't set an exit code"
+      ],
+      "answer": 1,
+      "explain": "0 means success; non-zero means failure. Scripts rely on this, e.g. `myapp && echo ok` only runs if myapp exited 0."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "How do you read command-line arguments with just the standard library?",
+      "back": "`let args: Vec<String> = std::env::args().collect();` — args[0] is the program name, real args start at args[1]."
+    },
+    {
+      "front": "stdout vs stderr — what goes where in a CLI?",
+      "back": "stdout (println!) = the real result/data. stderr (eprintln!) = status, warnings, errors. Keep them separate so piping works."
+    },
+    {
+      "front": "How does a program report success or failure to the shell?",
+      "back": "Its exit code: 0 = success, non-zero = failure. Set it with std::process::exit(code) or return Result from main."
+    },
+    {
+      "front": "When should you use the `clap` crate?",
+      "back": "For anything beyond one or two arguments. clap parses flags/options and generates --help, --version, and error messages for you."
+    }
+  ]
+}

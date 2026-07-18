@@ -1,0 +1,68 @@
+{
+  "topic": "functions",
+  "title": "Functions",
+  "quiz": [
+    {
+      "q": "In a function body, how do you return the last expression's value?",
+      "options": [
+        "Write it on the last line WITH a semicolon",
+        "Write it on the last line WITHOUT a semicolon",
+        "You must always use the `return` keyword",
+        "Assign it to a variable called `result`"
+      ],
+      "answer": 1,
+      "explain": "The final expression, written without a trailing semicolon, is the function's return value. No `return` keyword needed."
+    },
+    {
+      "q": "What happens if you add a semicolon after `a + b` in a function that returns i32?",
+      "options": [
+        "Nothing, it works the same",
+        "It returns a + b twice",
+        "It throws the value away and returns () — a 'mismatched types' error",
+        "It rounds the result"
+      ],
+      "answer": 2,
+      "explain": "The semicolon turns the expression into a statement, discarding the value. The function then returns () (nothing), causing 'expected i32, found ()'."
+    },
+    {
+      "q": "Which is a correctly written function signature?",
+      "options": [
+        "fn add(a, b) { a + b }",
+        "fn add(a: i32, b: i32) -> i32 { a + b }",
+        "fn add(a: i32, b: i32) { a + b }",
+        "fn add -> i32 (a, b) { a + b }"
+      ],
+      "answer": 1,
+      "explain": "Every parameter needs a type, and a function that returns a value must declare it with `-> Type`. Rust never infers parameter types."
+    },
+    {
+      "q": "When is the `return` keyword actually needed?",
+      "options": [
+        "Always, on every return",
+        "Never; Rust forbids it",
+        "To return early, before the end of the function",
+        "Only inside loops"
+      ],
+      "answer": 2,
+      "explain": "The last expression returns implicitly. You use `return` when you want to leave the function early, before reaching the end."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "How does a Rust function return a value without `return`?",
+      "back": "The last expression in the body, written with NO semicolon, is the return value."
+    },
+    {
+      "front": "What does a trailing semicolon do to a return value?",
+      "back": "It throws the value away — the expression becomes a statement returning () (nothing). Very common bug."
+    },
+    {
+      "front": "What must every function parameter have?",
+      "back": "A type. `fn add(a: i32, b: i32)`. Rust never infers parameter types."
+    },
+    {
+      "front": "How do you declare a function's return type?",
+      "back": "With an arrow: `fn name(...) -> ReturnType`. Leave the arrow off if the function returns nothing."
+    }
+  ]
+}

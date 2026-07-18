@@ -1,0 +1,68 @@
+{
+  "topic": "data-types",
+  "title": "Data types",
+  "quiz": [
+    {
+      "q": "What does the `u` in `u32` mean?",
+      "options": [
+        "Universal — works with any value",
+        "Unsigned — zero or positive only, no negatives",
+        "Unlimited size",
+        "Unicode text"
+      ],
+      "answer": 1,
+      "explain": "`u` means unsigned (0 or positive). `i` means signed (can be negative). The 32 is the number of bits."
+    },
+    {
+      "q": "Which default type does Rust pick for `let x = 5;`?",
+      "options": [
+        "u8",
+        "f64",
+        "i32",
+        "usize"
+      ],
+      "answer": 2,
+      "explain": "With no annotation, an integer literal defaults to `i32`. A decimal literal like 3.14 defaults to `f64`."
+    },
+    {
+      "q": "What is the difference between a tuple and an array?",
+      "options": [
+        "Tuples can hold different types; arrays hold one type, all the same",
+        "Arrays can hold different types; tuples hold one type",
+        "They are identical",
+        "Tuples can grow; arrays cannot"
+      ],
+      "answer": 0,
+      "explain": "A tuple groups a fixed number of possibly-different types. An array holds many values of the same type at a fixed length."
+    },
+    {
+      "q": "How do you write a single character value like the letter A?",
+      "options": [
+        "\"A\" with double quotes",
+        "'A' with single quotes",
+        "char(A)",
+        "`A`"
+      ],
+      "answer": 1,
+      "explain": "A `char` uses single quotes: 'A'. Double quotes \"A\" make text (a string slice), which is a different type."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Decode the type name `i32`.",
+      "back": "`i` = signed (can be negative), `32` = 32 bits. It's the everyday default integer type."
+    },
+    {
+      "front": "Array vs tuple?",
+      "back": "Array: many values of the SAME type, fixed length, indexed with [ ]. Tuple: fixed number of possibly-DIFFERENT types, accessed with .0, .1."
+    },
+    {
+      "front": "Single quotes vs double quotes?",
+      "back": "Single quotes 'A' = one char. Double quotes \"A\" = text (a string). Different types."
+    },
+    {
+      "front": "I need a list that grows. Array or Vec?",
+      "back": "A Vec. Arrays are a fixed length that can't grow or shrink; a growing collection is a Vec."
+    }
+  ]
+}

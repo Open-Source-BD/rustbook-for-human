@@ -1,0 +1,68 @@
+{
+  "topic": "workspaces-and-crates",
+  "title": "Workspaces and crates",
+  "quiz": [
+    {
+      "q": "What is the difference between a binary crate and a library crate?",
+      "options": [
+        "A binary crate is faster",
+        "A binary crate has a `main` function and runs; a library crate has no `main` and is used by other crates",
+        "A library crate can't have dependencies",
+        "There is no difference"
+      ],
+      "answer": 1,
+      "explain": "A binary crate produces a runnable program (has main). A library crate produces code for other crates to use (no main), like serde or axum."
+    },
+    {
+      "q": "What do all crates in a Cargo workspace share?",
+      "options": [
+        "One main function",
+        "One Cargo.lock and one target/ build folder",
+        "The same source file",
+        "Nothing"
+      ],
+      "answer": 1,
+      "explain": "A workspace shares a single Cargo.lock (so everyone uses the same dependency versions) and one target/ directory (so dependencies compile once)."
+    },
+    {
+      "q": "What should a pure workspace-root `Cargo.toml` contain?",
+      "options": [
+        "A `[package]` section describing the program",
+        "A `[workspace]` section with a `members` list and (usually) no `[package]`",
+        "Only `[dependencies]`",
+        "A `main` function"
+      ],
+      "answer": 1,
+      "explain": "The workspace root coordinates crates; it has `[workspace]` with members and no `[package]`. Each member has its own [package] Cargo.toml."
+    },
+    {
+      "q": "How do you depend on a local crate in the same workspace?",
+      "options": [
+        "You can't — only crates.io crates work",
+        "Point at its folder: `core = { path = \"../core\" }`",
+        "Copy its source into your crate",
+        "List it under [workspace] only"
+      ],
+      "answer": 1,
+      "explain": "Cargo looks up crates.io by default, so a local crate needs an explicit path. You can then use its `pub` items."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a crate, and what are the two kinds?",
+      "back": "A crate is one Rust compile unit. A binary crate has `main` and runs; a library crate has no main and is used by other crates."
+    },
+    {
+      "front": "What is a workspace and what does it share?",
+      "back": "A workspace groups multiple crates under one root. They share one Cargo.lock (same dependency versions) and one target/ folder (compile once)."
+    },
+    {
+      "front": "What goes in a pure workspace-root Cargo.toml?",
+      "back": "A `[workspace]` section with a `members` list and (usually) no `[package]`. Each member crate has its own [package] Cargo.toml."
+    },
+    {
+      "front": "How do you depend on another crate in the same workspace?",
+      "back": "Give it a path: `other = { path = \"../other\" }`. You can only use its `pub` items — the compiler enforces the boundary."
+    }
+  ]
+}

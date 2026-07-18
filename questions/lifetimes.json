@@ -1,0 +1,68 @@
+{
+  "topic": "lifetimes",
+  "title": "Lifetimes",
+  "quiz": [
+    {
+      "q": "What does a lifetime actually track?",
+      "options": [
+        "How much memory a value uses",
+        "How long a reference stays valid (how long its target exists)",
+        "How many times a value is cloned",
+        "The speed of the program"
+      ],
+      "answer": 1,
+      "explain": "A lifetime describes how long a reference is valid, so the compiler can forbid references that would outlive the data they point at."
+    },
+    {
+      "q": "Does adding a lifetime annotation like `'a` make data live longer?",
+      "options": [
+        "Yes, it extends how long the value exists",
+        "No, it only describes a relationship the compiler then checks",
+        "Yes, it allocates extra memory",
+        "Only for String, not for other types"
+      ],
+      "answer": 1,
+      "explain": "A lifetime annotation describes an existing relationship between references; it never allocates or prolongs anything."
+    },
+    {
+      "q": "When do you usually have to write an explicit lifetime like `'a`?",
+      "options": [
+        "On every function that uses references",
+        "When a function returns a reference and takes more than one reference",
+        "Only inside main()",
+        "Never — Rust always infers them"
+      ],
+      "answer": 1,
+      "explain": "Rust's elision rules cover the common cases. You mainly need explicit lifetimes when a function returns a reference and takes multiple references, so Rust can't tell which the output borrows from."
+    },
+    {
+      "q": "Why does this fail to compile: a reference `r` set to `&value` inside a block, then used after the block ends?",
+      "options": [
+        "value is dropped at the block's end, so r would dangle",
+        "You can't use & inside a block",
+        "r needs to be declared mut",
+        "Blocks aren't allowed in main()"
+      ],
+      "answer": 0,
+      "explain": "The value is dropped when its block ends, so r would point at freed memory. The compiler says 'value does not live long enough' and rejects it."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a lifetime?",
+      "back": "Rust's tracking of how long a reference stays valid — how long the thing it points at is guaranteed to exist. Used to forbid dangling references."
+    },
+    {
+      "front": "Does `'a` make data live longer?",
+      "back": "No. A lifetime annotation only describes a relationship between references so the compiler can check it. It never allocates or prolongs anything."
+    },
+    {
+      "front": "When do you need to write explicit lifetimes?",
+      "back": "Mostly when a function returns a reference and takes more than one reference, so Rust can't infer which input the output borrows from."
+    },
+    {
+      "front": "How do you read `'a`?",
+      "back": "\"tick-a\" — it's a made-up label for a duration (how long), written in <...>, not a type like i32."
+    }
+  ]
+}

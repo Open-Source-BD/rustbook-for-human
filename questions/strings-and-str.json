@@ -1,0 +1,68 @@
+{
+  "topic": "strings-and-str",
+  "title": "Strings and `str`",
+  "quiz": [
+    {
+      "q": "What is the difference between `String` and `&str`?",
+      "options": [
+        "String owns growable text; &str is a borrowed view of existing text",
+        "They are identical and interchangeable",
+        "&str owns text; String only borrows it",
+        "String is for numbers; &str is for letters"
+      ],
+      "answer": 0,
+      "explain": "String owns a growable heap buffer. &str is a borrowed view into text that lives somewhere else."
+    },
+    {
+      "q": "What type is a string literal like `\"hello\"`?",
+      "options": [
+        "String",
+        "&str",
+        "char",
+        "Vec<char>"
+      ],
+      "answer": 1,
+      "explain": "String literals are &str — borrowed views pointing into your compiled program."
+    },
+    {
+      "q": "For a function that only reads text, which parameter type is most flexible?",
+      "options": [
+        "String, because it owns the data",
+        "&str, because both String (via &) and literals can be passed",
+        "char, because it's smaller",
+        "It doesn't matter"
+      ],
+      "answer": 1,
+      "explain": "Taking &str lets callers pass a borrowed String or a literal without giving up ownership. Take &str to read, return String to build new text."
+    },
+    {
+      "q": "What does `.len()` return for the string `\"café\"`?",
+      "options": [
+        "4, the number of characters",
+        "5, the number of bytes (é takes 2 bytes in UTF-8)",
+        "1, because it's one word",
+        "It causes a compile error"
+      ],
+      "answer": 1,
+      "explain": ".len() counts bytes, not characters. 'é' is 2 bytes in UTF-8, so \"café\" is 5 bytes. Use .chars().count() for the character count."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "String vs &str?",
+      "back": "String owns growable, heap-allocated text. &str is a borrowed view of text that already exists. String literals are &str."
+    },
+    {
+      "front": "Which text type should a read-only function parameter use?",
+      "back": "&str. It accepts both a String (borrowed with &) and a literal, without taking ownership."
+    },
+    {
+      "front": "Why can't you write `some_string[0]` to get a character?",
+      "back": "Rust text is UTF-8; byte positions and character positions can differ, so indexing by number is disallowed. Use .chars().nth(i)."
+    },
+    {
+      "front": "Does .len() give the character count?",
+      "back": "No — it gives the byte count. Use .chars().count() for the number of characters."
+    }
+  ]
+}
