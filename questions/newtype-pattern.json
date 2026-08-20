@@ -1,0 +1,124 @@
+{
+  "topic": "newtype-pattern",
+  "title": "The newtype pattern",
+  "quiz": [
+    {
+      "q": "What does `struct Meters(f64);` create?",
+      "options": [
+        "An alias for f64 that's interchangeable with it",
+        "A brand new type, distinct from f64, at zero runtime cost",
+        "A struct with a field named 'f64'",
+        "A trait that f64 must implement"
+      ],
+      "answer": 1,
+      "explain": "A single-field tuple struct wraps f64 but is a genuinely different type to the compiler, while being identical to a bare f64 in memory at runtime — a zero-cost abstraction."
+    },
+    {
+      "q": "Why does wrapping UserId(u64) and OrderId(u64) separately prevent a real bug?",
+      "options": [
+        "It makes both types faster",
+        "It stops the compiler from allowing a UserId to be passed where an OrderId is expected, even though both are u64 underneath",
+        "It automatically validates the ID values are positive",
+        "It converts the IDs to strings for safety"
+      ],
+      "answer": 1,
+      "explain": "Without the wrapper, both parameters are just u64 and can be swapped by accident with no compiler warning. With distinct newtypes, swapping them is a compile error."
+    },
+    {
+      "q": "What is the orphan rule?",
+      "options": [
+        "A rule that all structs must have at least one field",
+        "A rule blocking impl ForeignTrait for ForeignType when you own neither the trait nor the type",
+        "A rule that prevents recursive struct definitions",
+        "A rule about unused variables"
+      ],
+      "answer": 1,
+      "explain": "The orphan rule exists so two different crates can't both implement the same foreign trait for the same foreign type in conflicting ways. You must own the trait or the type (or both)."
+    },
+    {
+      "q": "How does the newtype pattern work around the orphan rule?",
+      "options": [
+        "It doesn't — the orphan rule cannot be avoided",
+        "By wrapping the foreign type in a new type you define, so you now own the type in the impl slot",
+        "By renaming the foreign trait",
+        "By using unsafe code to bypass type checking"
+      ],
+      "answer": 1,
+      "explain": "impl ForeignTrait for YourWrapper(ForeignType) is allowed because YourWrapper is defined in your own crate — you own the type even though the trait is still foreign."
+    },
+    {
+      "q": "How do you access the inner value of `let d = Meters(42.0);`?",
+      "options": [
+        "d.inner()",
+        "d.value",
+        "d.0",
+        "*d"
+      ],
+      "answer": 2,
+      "explain": "Tuple structs index their fields positionally starting at 0, so the single wrapped value is accessed with .0."
+    },
+    {
+      "q": "Does `struct Meters(f64)` automatically inherit f64's methods like sqrt()?",
+      "options": [
+        "Yes, all inner type methods are inherited automatically",
+        "No — you need .0 to reach the inner value, or a Deref impl to forward method calls",
+        "Only arithmetic operators are inherited, not other methods",
+        "Only if the struct derives Copy"
+      ],
+      "answer": 1,
+      "explain": "A newtype is a brand new type with no methods of its own by default. You either unwrap with .0 or implement Deref (or forwarding methods) to make it feel like the inner type."
+    },
+    {
+      "q": "Why does `println!(\"{}\", Meters(42.0))` fail to compile?",
+      "options": [
+        "println! only works with integers",
+        "Meters doesn't implement Display — wrapping a printable f64 doesn't make the wrapper itself printable",
+        "You must always use {:?} for structs",
+        "Tuple structs cannot be printed at all"
+      ],
+      "answer": 1,
+      "explain": "Meters is a new type with no trait implementations by default. You need m.0 to print the inner f64, or implement Display/derive Debug on Meters yourself."
+    },
+    {
+      "q": "What's a downside of overusing the newtype pattern?",
+      "options": [
+        "It makes the program slower at runtime",
+        "Wrapping every primitive adds .0 noise everywhere and slows readers down",
+        "It's not allowed by the Rust compiler for more than 5 types",
+        "It disables pattern matching entirely"
+      ],
+      "answer": 1,
+      "explain": "Newtypes are best reserved for cases where mixing values up would be a real bug (IDs, units). Wrapping everything by default adds unwrapping overhead to reading and writing code."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does the newtype pattern look like syntactically?",
+      "back": "A single-field tuple struct, e.g. struct Meters(f64); — wraps an existing type to create a new, distinct type at zero runtime cost."
+    },
+    {
+      "front": "What real bug does wrapping UserId(u64) and OrderId(u64) separately prevent?",
+      "back": "Accidentally passing one where the other is expected. Both are u64 underneath, but as distinct newtypes the compiler catches the swap at the call site."
+    },
+    {
+      "front": "State the orphan rule in one sentence.",
+      "back": "You cannot impl ForeignTrait for ForeignType unless you own the trait or the type (or both) — this prevents conflicting trait impls across crates."
+    },
+    {
+      "front": "How does wrapping a foreign type sidestep the orphan rule?",
+      "back": "Define your own newtype around the foreign type (e.g. struct Names(Vec<String>);). You now own the type in the impl slot, so impl ForeignTrait for Names is allowed."
+    },
+    {
+      "front": "How do you get the inner value out of a newtype?",
+      "back": "With .0 (tuple structs index fields positionally), or by implementing Deref/From for more ergonomic access."
+    },
+    {
+      "front": "Does a newtype inherit the wrapped type's methods automatically?",
+      "back": "No. struct Meters(f64) does not gain f64's methods for free — you need .0 to reach the inner value, or explicit Deref/forwarding impls."
+    },
+    {
+      "front": "When should you reach for a newtype?",
+      "back": "When mixing up two values of the same underlying type would be a real bug (IDs, units, currencies) — not reflexively for every primitive, since that adds .0 noise everywhere."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "topic": "threads-and-spawn",
+  "title": "Threads and spawn",
+  "quiz": [
+    {
+      "q": "What does `thread::spawn(closure)` return?",
+      "options": [
+        "The closure's return value immediately",
+        "A `JoinHandle` you can later `.join()` to get the result",
+        "Nothing — it blocks until the closure finishes",
+        "A `Result<(), Error>`"
+      ],
+      "answer": 1,
+      "explain": "`thread::spawn` starts the closure running on a new OS thread and returns right away with a `JoinHandle`, which you trade in later via `.join()`."
+    },
+    {
+      "q": "Why does a closure passed to `thread::spawn` usually need to be `move`?",
+      "options": [
+        "It makes the thread start faster",
+        "It gives the thread ownership of captured values, since the compiler can't prove borrowed data outlives the new thread",
+        "It's required syntax with no real meaning",
+        "It pins the thread to a specific CPU core"
+      ],
+      "answer": 1,
+      "explain": "`thread::spawn` needs a `'static` closure — one that might outlive the current stack frame. `move` transfers ownership in, so there's nothing left that could dangle."
+    },
+    {
+      "q": "What type does `handle.join()` return?",
+      "options": [
+        "The closure's return value directly, panicking if the thread failed",
+        "`Result<T, Box<dyn Any + Send>>` — `Ok(value)` on success, `Err(payload)` if the thread panicked",
+        "`()`, always",
+        "Another `JoinHandle`"
+      ],
+      "answer": 1,
+      "explain": "`.join()` gives back a `Result`, not the bare value. You need `.unwrap()` or a `match` to reach the `T` inside `Ok`."
+    },
+    {
+      "q": "A spawned thread panics (say, an out-of-bounds index). What happens to the rest of the program?",
+      "options": [
+        "The whole process exits immediately",
+        "Only that thread unwinds; `.join()` returns `Err`, and other threads (including `main`) keep running",
+        "The panic is silently swallowed and never reported",
+        "`main` automatically restarts the failed thread"
+      ],
+      "answer": 1,
+      "explain": "Rust unwinds just the panicking thread's stack. The panic surfaces as `Err` from `.join()` — it does not bring down threads that didn't panic."
+    },
+    {
+      "q": "You call `handle.join().unwrap()` and the spawned thread had panicked. What happens?",
+      "options": [
+        "It silently returns a default value",
+        "It panics on the thread that called `.join()`, propagating the failure",
+        "It restarts the spawned thread automatically",
+        "It converts the `Err` into `Ok(())`"
+      ],
+      "answer": 1,
+      "explain": "`Result::unwrap()` panics when given an `Err`. So `.join().unwrap()` re-raises the worker's panic, but now on the joining thread."
+    },
+    {
+      "q": "In `thread::spawn(|| { ...; last_expr })`, what happens to `last_expr`?",
+      "options": [
+        "It's ignored entirely",
+        "It becomes the value wrapped in `Ok(...)` inside `handle.join()`'s result",
+        "It's printed to stdout automatically",
+        "It's a compile error unless you write `return` explicitly"
+      ],
+      "answer": 1,
+      "explain": "Like any Rust function or closure, the last expression is the return value — here, it becomes the `T` in the thread's `JoinHandle<T>`."
+    },
+    {
+      "q": "What happens if `main` finishes before a spawned thread you never `.join()`-ed?",
+      "options": [
+        "Rust automatically waits for every spawned thread before exiting",
+        "The process exits, and the unjoined thread is cut off mid-work",
+        "The compiler refuses to build the program",
+        "The spawned thread is promoted to run as the new `main`"
+      ],
+      "answer": 1,
+      "explain": "When `main` returns, the process exits — any spawned threads still running are simply cut off. `.join()` is what makes `main` wait for them."
+    },
+    {
+      "q": "Why is spawning a brand-new OS thread for every tiny unit of work often a bad idea?",
+      "options": [
+        "Threads in Rust can't return values",
+        "Each OS thread has real overhead (its own stack, kernel bookkeeping) — a thread pool is cheaper for lots of small tasks",
+        "It's not actually possible to spawn more than a few threads in Rust",
+        "OS threads share memory unsafely by default"
+      ],
+      "answer": 1,
+      "explain": "OS threads aren't free — each one costs memory and scheduling overhead. For many short-lived jobs, a thread pool (e.g. `rayon`) reuses a fixed set of threads instead."
+    }
+  ],
+  "flashcards": [
+    { "front": "Start work on a new thread?", "back": "`thread::spawn(move || { ... })` — returns a `JoinHandle<T>` immediately; the closure runs concurrently." },
+    { "front": "Why `move` on the closure?", "back": "The closure might outlive the current stack frame, so it must own (not borrow) the values it captures — `move` transfers ownership in." },
+    { "front": "What does `.join()` return?", "back": "`Result<T, Box<dyn Any + Send>>` — `Ok(value)` is the closure's return value; `Err(payload)` means the thread panicked." },
+    { "front": "Does a panic in a spawned thread crash the whole program?", "back": "No. Only that thread unwinds; `.join()` reports it as `Err`, and every other thread (including `main`) keeps running." },
+    { "front": "What does `.join().unwrap()` do if the thread panicked?", "back": "It re-panics — but now on the thread that called `.join()`. Match the `Err` explicitly if you want to contain the failure instead." },
+    { "front": "What happens if you never call `.join()` on a handle?", "back": "If `main` exits first, the spawned thread is simply cut off mid-work — the process doesn't wait for it automatically." },
+    { "front": "When should you avoid spawning a thread per task?", "back": "When you have many small, short-lived tasks — OS threads have real overhead; use a thread pool (e.g. `rayon`) instead." }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "topic": "trait-objects-and-dyn",
+  "title": "Trait objects and dyn",
+  "quiz": [
+    {
+      "q": "What happens when you call a generic function `print_area::<Circle>` and `print_area::<Square>` in the same program?",
+      "options": [
+        "The compiler generates one shared function that checks the type at runtime",
+        "The compiler generates two separate monomorphized copies, one per concrete type",
+        "It fails to compile — a generic function can only be called with one type per program",
+        "Both calls run through a vtable lookup"
+      ],
+      "answer": 1,
+      "explain": "Monomorphization means the compiler stamps out a dedicated copy of the generic function for each concrete type it's called with. Calls are direct, with no runtime dispatch."
+    },
+    {
+      "q": "Why can't `Vec<T>` hold both a `Circle` and a `Square` even if both implement the same `Shape` trait?",
+      "options": [
+        "Vec can only ever hold one element",
+        "Circle and Square are different concrete types, and every element of Vec<T> must be the same T",
+        "Shape must be object-safe first",
+        "Vec doesn't support custom structs"
+      ],
+      "answer": 1,
+      "explain": "Vec<T> is generic over one fixed T. Circle and Square are different types, so neither alone satisfies 'every element is T' unless you switch to a trait object like Box<dyn Shape>."
+    },
+    {
+      "q": "Why must `dyn Shape` sit behind a pointer like `Box<dyn Shape>` or `&dyn Shape`?",
+      "options": [
+        "Because dyn Trait is deprecated syntax",
+        "Because dyn Shape is unsized — its size depends on the concrete type behind it, which isn't known at compile time",
+        "Because traits cannot be stored in variables at all",
+        "Because Box is required for all heap allocation in Rust"
+      ],
+      "answer": 1,
+      "explain": "Different Shape implementers have different sizes. A pointer is always a fixed size regardless of what it points to, which is what lets dyn Shape be used at all."
+    },
+    {
+      "q": "What extra information does a `Box<dyn Trait>` fat pointer carry compared to a regular pointer?",
+      "options": [
+        "A copy of the trait definition source code",
+        "The address of a vtable — a table of function pointers, one per trait method, for the concrete type",
+        "The size of the Vec it lives in",
+        "A reference count"
+      ],
+      "answer": 1,
+      "explain": "A trait object pointer is 'fat': it carries the data address plus a vtable address. Calling a method looks up the right function pointer in that vtable."
+    },
+    {
+      "q": "What makes a trait NOT object-safe (unable to become `dyn Trait`)?",
+      "options": [
+        "Having more than one method",
+        "Having a method with a generic type parameter, or a method returning Self by value",
+        "Having a default method",
+        "Being implemented for more than one type"
+      ],
+      "answer": 1,
+      "explain": "A vtable needs one fixed function pointer per method. A generic method would need unboundedly many versions, and a Self-returning method has an unknown size at the call site — both break the fixed-shape requirement."
+    },
+    {
+      "q": "What is the runtime cost of calling a method through `dyn Trait` compared to a generic (static dispatch) call?",
+      "options": [
+        "Identical — no cost at all",
+        "One extra indirection: a vtable lookup to find the right function pointer, then a call through it",
+        "It requires garbage collection",
+        "It always allocates memory on every call"
+      ],
+      "answer": 1,
+      "explain": "Static dispatch calls the concrete function directly. Dynamic dispatch adds one vtable lookup before the jump — a small, bounded cost."
+    },
+    {
+      "q": "What does `fn make_adder(n: i32) -> impl Fn(i32) -> i32` mean?",
+      "options": [
+        "The function returns a boxed trait object chosen at runtime",
+        "The function returns some fixed, unnamed concrete type implementing Fn(i32) -> i32, resolved entirely at compile time",
+        "The function can return a different closure type on each call, chosen by the caller",
+        "The function must be generic over its return type"
+      ],
+      "answer": 1,
+      "explain": "impl Trait in return position names one specific compile-time type without spelling it out. Unlike dyn Trait, every return path must produce the exact same underlying type."
+    },
+    {
+      "q": "A function has two branches, each returning a different concrete closure type, both implementing the same Fn trait. Why does `-> impl Fn(i32) -> i32` fail to compile for this function?",
+      "options": [
+        "impl Trait return position requires all return paths to resolve to the identical concrete type; use Box<dyn Fn(i32) -> i32> instead",
+        "Closures can never be returned from functions",
+        "Fn traits are not object-safe",
+        "impl Trait can only be used with structs, not closures"
+      ],
+      "answer": 0,
+      "explain": "impl Trait in return position is resolved to one hidden concrete type at compile time. If the concrete type genuinely varies by branch, you need dynamic dispatch: Box<dyn Fn(i32) -> i32>."
+    },
+    {
+      "q": "You have `Vec<dyn Shape>` and get 'the size for values of type dyn Shape cannot be known at compilation time'. What's the fix?",
+      "options": [
+        "Add #[derive(Sized)] to Shape",
+        "Change it to Vec<Box<dyn Shape>> so each element is a fixed-size pointer",
+        "Remove the Vec entirely, dyn Trait cannot be collected",
+        "Add a generic parameter <T: Shape> to main"
+      ],
+      "answer": 1,
+      "explain": "dyn Shape alone is unsized. Wrapping each element in Box (or &, or Rc) gives Vec a fixed-size element type to store, even though what each Box points to varies in size."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is monomorphization?",
+      "back": "The compiler generating a separate, specialized copy of a generic function for each concrete type it's called with — the basis of static dispatch."
+    },
+    {
+      "front": "Static dispatch vs dynamic dispatch — the core trade-off.",
+      "back": "Static dispatch (generics): direct calls, no runtime cost, but one fixed type per call site. Dynamic dispatch (dyn Trait): a vtable lookup per call, but lets you mix concrete types behind one interface."
+    },
+    {
+      "front": "Why is `dyn Trait` described as 'unsized'?",
+      "back": "Different types implementing the trait have different sizes, so the compiler can't know dyn Trait's size at compile time. It must live behind a pointer (Box, &, Rc)."
+    },
+    {
+      "front": "What is a vtable?",
+      "back": "A table of function pointers, one per trait method, generated once per concrete type — what a dyn Trait fat pointer uses to dispatch a method call at runtime."
+    },
+    {
+      "front": "What is a 'fat pointer' in the context of dyn Trait?",
+      "back": "A pointer that carries two addresses: the data itself, and the vtable for the concrete type behind it — twice the size of a normal pointer."
+    },
+    {
+      "front": "What breaks a trait's object safety?",
+      "back": "A method with a generic type parameter, or a method that returns Self by value — both need information a fixed vtable can't provide."
+    },
+    {
+      "front": "What does `impl Trait` in return position mean, and how does it differ from dyn Trait?",
+      "back": "It means 'some fixed concrete type implementing Trait, resolved at compile time' — no vtable, no pointer needed, but every return path must be the same underlying type (unlike dyn Trait, which can vary at runtime)."
+    },
+    {
+      "front": "When should you reach for Box<dyn Trait> instead of generics?",
+      "back": "When you need one collection or variable that can hold genuinely different concrete types behind the same trait interface, e.g. Vec<Box<dyn Shape>>."
+    }
+  ]
+}

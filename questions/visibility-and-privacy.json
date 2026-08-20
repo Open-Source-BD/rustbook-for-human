@@ -1,0 +1,128 @@
+{
+  "topic": "visibility-and-privacy",
+  "title": "Visibility and privacy",
+  "quiz": [
+    {
+      "q": "What is the default visibility of an item in Rust?",
+      "options": [
+        "pub",
+        "Private, scoped to its defining module and that module's descendants",
+        "pub(crate)",
+        "Depends on the file name"
+      ],
+      "answer": 1,
+      "explain": "Every item is private by default — visible only within the module that defines it and that module's descendant modules."
+    },
+    {
+      "q": "What does `pub(crate)` expose that plain `pub` doesn't restrict?",
+      "options": [
+        "Nothing different — they're identical",
+        "Visibility across your whole crate, but not to downstream users of a published crate",
+        "Visibility to just the parent module",
+        "Visibility only within the same file"
+      ],
+      "answer": 1,
+      "explain": "pub(crate) is visible everywhere inside the crate, but external crates using this one as a library still can't see it — unlike plain pub."
+    },
+    {
+      "q": "What does `pub(super)` restrict visibility to?",
+      "options": [
+        "The entire crate",
+        "Just the immediate parent module",
+        "Only the same module",
+        "Every module except the parent"
+      ],
+      "answer": 1,
+      "explain": "pub(super) exposes an item to the module one level up (the parent), and no further."
+    },
+    {
+      "q": "If `Account` is a `pub` struct, are its fields automatically `pub` too?",
+      "options": [
+        "Yes, always",
+        "No — each field needs its own pub marker",
+        "Only the first declared field is pub",
+        "Only if the struct derives Debug"
+      ],
+      "answer": 1,
+      "explain": "A pub struct's fields stay private by default; visibility is decided field by field, independent of the struct's own visibility."
+    },
+    {
+      "q": "What does `pub use` do?",
+      "options": [
+        "Makes an entire module public",
+        "Re-exports an item under a new path, so callers don't need to know your internal module layout",
+        "Deletes the original item definition",
+        "Only works for functions, not types"
+      ],
+      "answer": 1,
+      "explain": "pub use re-exports an item (often flattening a deep internal path into a short public one) without moving the original definition."
+    },
+    {
+      "q": "Why can't outside code write `inventory::Item { name: ..., price: ... }` if `Item`'s `name` field is private?",
+      "options": [
+        "Struct literals never work outside the defining crate",
+        "A struct literal must set every field, and outside code can't set a private field",
+        "price must also be private for this to matter",
+        "Item needs #[derive(Default)] first"
+      ],
+      "answer": 1,
+      "explain": "Struct literal syntax needs to set every field; a private field can't be set from outside its module, so outside code needs a public constructor function instead."
+    },
+    {
+      "q": "Why is defaulting to the narrowest visibility (rather than always using pub) usually the better choice?",
+      "options": [
+        "It compiles faster",
+        "Every pub item is a permanent promise to callers — widening later is easy, narrowing is a breaking change",
+        "Rust limits how many pub items a module can have",
+        "pub items use more memory at runtime"
+      ],
+      "answer": 1,
+      "explain": "Once something is pub, external code may depend on it; narrowing visibility later breaks that code, so it's safer to start narrow and widen only when genuinely needed."
+    },
+    {
+      "q": "Does Rust's privacy system follow file boundaries or module boundaries?",
+      "options": [
+        "File boundaries — each file is its own privacy scope",
+        "Module boundaries — modules can span multiple files or share one file",
+        "Both equally",
+        "Neither — privacy only applies per-crate"
+      ],
+      "answer": 1,
+      "explain": "Privacy is entirely about the module tree; how you split modules across files has no effect on visibility rules."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is Rust's default visibility for items?",
+      "back": "Private — visible only to the defining module and its descendant modules."
+    },
+    {
+      "front": "What does pub(crate) mean?",
+      "back": "Visible anywhere inside the current crate, but invisible to downstream users if this crate is published as a library."
+    },
+    {
+      "front": "What does pub(super) mean?",
+      "back": "Visible to just the immediate parent module, one level up — and no further."
+    },
+    {
+      "front": "Does making a struct pub make its fields pub?",
+      "back": "No — each field's visibility is set independently of the struct's own visibility."
+    },
+    {
+      "front": "What does pub use do?",
+      "back": "Re-exports an item under a new path so callers don't need to know (or depend on) your internal module layout."
+    },
+    {
+      "front": "Why can't you build a struct literal for a type with a private field, from outside its module?",
+      "back": "A struct literal must set every field, and private fields can't be set from outside — you need a public constructor instead."
+    },
+    {
+      "front": "What's the risk of marking everything pub \"to be safe\"?",
+      "back": "Every pub item becomes a permanent part of your public API — widening later is easy, narrowing is a breaking change."
+    },
+    {
+      "front": "Does Rust privacy follow files or modules?",
+      "back": "Modules — file layout has no bearing on visibility rules."
+    }
+  ]
+}

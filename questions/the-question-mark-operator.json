@@ -1,0 +1,135 @@
+{
+  "topic": "the-question-mark-operator",
+  "title": "The ? operator",
+  "quiz": [
+    {
+      "q": "What does `expr?` do when `expr` evaluates to an `Err(e)`?",
+      "options": [
+        "It panics immediately",
+        "It returns `Err(e)` (converted if needed) from the enclosing function right away",
+        "It silently ignores the error and continues",
+        "It logs the error and continues with a default value"
+      ],
+      "answer": 1,
+      "explain": "`?` on an Err returns early from the enclosing function with that error (running it through From::from first). On Ok, it unwraps the value and execution continues."
+    },
+    {
+      "q": "Why does `?` only work inside a function that returns `Result` or `Option`?",
+      "options": [
+        "It's an arbitrary syntax restriction with no deeper reason",
+        "Because `?`'s early return has to return a Result/Option from the enclosing function, and there's nowhere for that to go otherwise",
+        "Because Result and Option are the only types with a Debug impl",
+        "It actually works in any function, this is a common misconception"
+      ],
+      "answer": 1,
+      "explain": "`?` desugars to an early `return Err(...)` (or `return None`). If the function's return type isn't Result/Option, that return has nowhere valid to go, so the compiler rejects it."
+    },
+    {
+      "q": "What is `expr?` roughly equivalent to, written out as a match?",
+      "options": [
+        "`match expr { Ok(v) => v, Err(e) => return Err(e.into()) }`",
+        "`match expr { Ok(v) => return v, Err(e) => v }`",
+        "`expr.unwrap()`",
+        "`match expr { Ok(v) => Some(v), Err(e) => None }`"
+      ],
+      "answer": 0,
+      "explain": "`?` unpacks Ok(v) into v and continues, or returns Err(e) (converted via From) from the function immediately on Err — exactly what that match spells out."
+    },
+    {
+      "q": "What extra step does `?` perform on the error value that a plain `return Err(e)` would not?",
+      "options": [
+        "It logs the error to stderr automatically",
+        "It calls `From::from` on the error, converting it into the function's declared error type if needed",
+        "It clones the error",
+        "It wraps the error in an Option"
+      ],
+      "answer": 1,
+      "explain": "`?` calls From::from on the error so a function can return one error type while `?`-ing through several different underlying error types, as long as a From conversion exists."
+    },
+    {
+      "q": "A function returns `Result<i32, ParseIntError>`, but you use `?` on something that fails with `std::io::Error`, with no `From<io::Error> for ParseIntError` impl. What happens?",
+      "options": [
+        "It compiles fine; the io::Error is silently discarded",
+        "It compiles and converts using Debug formatting",
+        "It's a compile error — there's no way to convert the error into the declared error type",
+        "It panics at runtime instead of failing to compile"
+      ],
+      "answer": 2,
+      "explain": "`?` needs a From conversion path to the function's declared error type. Without one, the compiler rejects the code with a type mismatch on the `?`."
+    },
+    {
+      "q": "What does `fn main() -> Result<(), E>` let you do?",
+      "options": [
+        "Nothing new — main can never return a value",
+        "Use `?` directly inside main, since main itself now returns a Result",
+        "Skip writing Ok(()) at the end of main",
+        "Automatically catch all panics in the program"
+      ],
+      "answer": 1,
+      "explain": "Since `?` needs a Result/Option-returning enclosing function, giving main a Result<(), E> return type lets you use `?` at the top level too."
+    },
+    {
+      "q": "In `fn main() -> Result<(), std::num::ParseIntError> { let n: i32 = \"123\".parse()?; Ok(()) }`, what does `Ok(())` mean?",
+      "options": [
+        "Success, with no meaningful value — () is Rust's empty type",
+        "An error containing an empty string",
+        "The function is still running",
+        "A placeholder that must later be replaced with a real value"
+      ],
+      "answer": 0,
+      "explain": "`()` (unit) is Rust's 'nothing of interest' type. Ok(()) means the function succeeded but has no value to hand back besides that success."
+    },
+    {
+      "q": "Does `?` work on `Option<T>`, not just `Result<T, E>`?",
+      "options": [
+        "No, `?` is exclusive to Result",
+        "Yes — inside a function returning Option, `?` unwraps Some or returns None immediately",
+        "Only in unstable/nightly Rust",
+        "Only if the Option contains a Result"
+      ],
+      "answer": 1,
+      "explain": "`?` works the same way on Option: it returns the inner value on Some, or returns None immediately from the enclosing (Option-returning) function."
+    },
+    {
+      "q": "Besides changing the error path, what must you still write explicitly on a function's success path when using `?`?",
+      "options": [
+        "Nothing, `?` handles both paths",
+        "An explicit Ok(value) (or Some(value)) at the end — `?` only rewrites the error/early-return side",
+        "A call to .unwrap()",
+        "A separate match statement"
+      ],
+      "answer": 1,
+      "explain": "`?` only handles the early-return-on-failure side. The function's normal return still needs to explicitly wrap the successful value in Ok(...) or Some(...)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does `expr?` do on Ok(v) vs Err(e)?",
+      "back": "On Ok(v): unwraps to v and execution continues. On Err(e): immediately returns Err(e) (converted via From if needed) from the enclosing function."
+    },
+    {
+      "front": "Why must the enclosing function return Result or Option to use `?`?",
+      "back": "`?`'s early-return path returns an Err/None from the enclosing function. If that function's return type isn't Result/Option, there's nowhere valid for the early return to go, so it's a compile error."
+    },
+    {
+      "front": "What does `?` do to the error value that a plain early return wouldn't?",
+      "back": "It calls From::from on the error, converting it into whatever error type the function declares — so `?` can auto-convert between different underlying error types."
+    },
+    {
+      "front": "What happens if `?` needs to convert error type A into error type B but no From<A> for B exists?",
+      "back": "Compile error — the `?` has no way to perform the conversion. Fix by widening the return type (e.g. to Box<dyn Error>) or writing the From impl yourself."
+    },
+    {
+      "front": "What does `fn main() -> Result<(), E>` enable?",
+      "back": "It lets you use `?` directly inside main, since `?` requires the enclosing function to return Result/Option, and now main does."
+    },
+    {
+      "front": "Does `?` still require an explicit Ok(...)/Some(...) on the success path?",
+      "back": "Yes. `?` only handles the failure/early-return side. The function's normal (non-early) return still needs to wrap the value: `Ok(value)` or `Some(value)`."
+    },
+    {
+      "front": "Does `?` work on Option<T> as well as Result<T, E>?",
+      "back": "Yes — inside a function returning Option<T>, `?` unwraps Some(v) to v, or returns None immediately on None."
+    }
+  ]
+}

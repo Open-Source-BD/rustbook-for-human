@@ -1,0 +1,129 @@
+{
+  "topic": "iterator-adaptors",
+  "title": "Iterator adaptors",
+  "quiz": [
+    {
+      "q": "What does `.map()` do when added to a lazy iterator chain?",
+      "options": [
+        "Immediately runs and returns a Vec",
+        "Describes a transformation of each item; still does nothing until consumed",
+        "Filters out items that fail a test",
+        "Only works on numbers"
+      ],
+      "answer": 1,
+      "explain": "Like all adaptors, `.map()` just adds a step to the plan. Nothing runs until a consumer like `.collect()` or a `for` loop pulls values through."
+    },
+    {
+      "q": "What's the difference between `filter` and `filter_map`?",
+      "options": [
+        "filter keeps items passing a test; filter_map both filters and transforms in one step, dropping Nones",
+        "They are identical",
+        "filter_map only works with numbers",
+        "filter transforms, filter_map filters"
+      ],
+      "answer": 0,
+      "explain": "filter_map's closure returns Option<T>: Some(value) keeps the transformed value, None drops the item — one adaptor instead of map + filter + unwrap."
+    },
+    {
+      "q": "What happens when you `.zip()` two iterators of different lengths?",
+      "options": [
+        "It panics",
+        "The result has the length of the longer iterator, padding the shorter with None",
+        "The result stops as soon as the shorter iterator is exhausted",
+        "Rust refuses to compile"
+      ],
+      "answer": 2,
+      "explain": "zip pairs items positionally and stops the moment either side runs out, so the output length equals the shorter of the two iterators."
+    },
+    {
+      "q": "Which method pairs each item with its index, starting at 0?",
+      "options": ["zip", "enumerate", "fold", "take"],
+      "answer": 1,
+      "explain": "enumerate() turns an iterator of Item into an iterator of (usize, Item) pairs, with the index starting at 0."
+    },
+    {
+      "q": "What does `.collect::<Vec<i32>>()` do that a bare `.collect()` sometimes can't?",
+      "options": [
+        "Nothing different",
+        "Tells the compiler what type to build, avoiding a 'type annotations needed' error",
+        "Makes the chain run eagerly instead of lazily",
+        "Reverses the collection"
+      ],
+      "answer": 1,
+      "explain": "collect() can build many different collections, so the compiler needs to know which one. Turbofish (or a type annotation on the binding) supplies that."
+    },
+    {
+      "q": "What does `nums.iter().fold(0, |acc, n| acc + n)` compute for `[1, 2, 3]`?",
+      "options": ["0", "6", "[1, 2, 3]", "a panic"],
+      "answer": 1,
+      "explain": "fold carries an accumulator through every item, starting at 0: 0+1=1, 1+2=3, 3+3=6. The final accumulator, 6, is returned."
+    },
+    {
+      "q": "Why might a plain for loop be preferred over a 6-step adaptor chain?",
+      "options": [
+        "for loops are always faster",
+        "Long chains can become harder to read and debug than a commented for loop",
+        "Adaptors don't work with more than 3 steps",
+        "for loops don't need a mut binding"
+      ],
+      "answer": 1,
+      "explain": "Adaptors are great for straightforward transform/filter/collect work, but a very long chain — or one with side effects — often reads worse than a for loop you can step through line by line."
+    },
+    {
+      "q": "What does `.take(3)` do to an iterator?",
+      "options": [
+        "Removes the first 3 items and returns the rest",
+        "Yields only the first 3 items, ignoring the rest",
+        "Skips the first 3 items",
+        "Takes ownership of only the first 3 items"
+      ],
+      "answer": 1,
+      "explain": "take(n) limits the stream to at most the first n items; everything after is never yielded."
+    },
+    {
+      "q": "What's the difference between `.sum()` and `.count()`?",
+      "options": [
+        "sum() adds up numeric items; count() tells you how many items came through, regardless of value",
+        "They do the same thing",
+        "count() only works on Strings",
+        "sum() returns an Option, count() returns a Result"
+      ],
+      "answer": 0,
+      "explain": "sum() totals the numeric values in the iterator. count() ignores the values entirely and just tallies how many items were produced."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What do adaptors like map, filter, and enumerate have in common?",
+      "back": "They're all lazy — each describes a step in the pipeline but runs no code until a consumer pulls values through."
+    },
+    {
+      "front": "What's the difference between filter and filter_map?",
+      "back": "filter keeps items where a closure returns true. filter_map runs a closure returning Option<T> per item — Some is kept and unwrapped, None is dropped. One step instead of filter + map + unwrap."
+    },
+    {
+      "front": "How long does .zip() run when the two iterators have different lengths?",
+      "back": "It stops as soon as either iterator runs out — the result length is the shorter of the two."
+    },
+    {
+      "front": "How do you tell .collect() what type to build?",
+      "back": "Either a type annotation on the binding (`let v: Vec<i32> = ...`) or turbofish syntax (`.collect::<Vec<i32>>()`)."
+    },
+    {
+      "front": "What does fold(init, |acc, item| ...) do?",
+      "back": "Builds up a single accumulated value by applying the closure to each item in turn, starting from init. sum() is really a specialized fold."
+    },
+    {
+      "front": "When does a for loop read better than an adaptor chain?",
+      "back": "When the chain gets long (roughly 4-5+ adaptors), has side effects like I/O, or needs intermediate debugging — a commented for loop is often clearer."
+    },
+    {
+      "front": "What does enumerate() add to each item?",
+      "back": "Its index, yielding (usize, Item) pairs starting at 0."
+    },
+    {
+      "front": "What's the difference between sum() and count()?",
+      "back": "sum() adds up the numeric values of items into a total. count() just tallies how many items passed through, regardless of their value."
+    }
+  ]
+}

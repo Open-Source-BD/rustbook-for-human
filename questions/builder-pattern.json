@@ -1,0 +1,124 @@
+{
+  "topic": "builder-pattern",
+  "title": "The builder pattern",
+  "quiz": [
+    {
+      "q": "Why does Rust lean on the builder pattern instead of what many other languages use for optional constructor arguments?",
+      "options": [
+        "Rust has no constructor overloading or named/optional function arguments",
+        "Rust structs cannot have more than 3 fields",
+        "Builders are required by the borrow checker",
+        "Rust doesn't allow default values anywhere"
+      ],
+      "answer": 0,
+      "explain": "Without overloaded constructors or named/optional arguments, a struct with many optional fields needs another way to be built readably — that's what the builder pattern provides."
+    },
+    {
+      "q": "What must a builder setter method return to support method chaining like `.name(\"x\").port(8080)`?",
+      "options": [
+        "()",
+        "&str",
+        "Self",
+        "bool"
+      ],
+      "answer": 2,
+      "explain": "Each setter takes self (consuming the builder) and must return Self so the next .method() call has something of the right type to call on."
+    },
+    {
+      "q": "A setter is written as `fn port(mut self, port: u16) { self.port = port; }` (no return type). What happens?",
+      "options": [
+        "It fails to compile at the setter itself with a clear error",
+        "It compiles, but the chain breaks at the NEXT method call because port() returns ()",
+        "It silently ignores the port value",
+        "It automatically infers -> Self"
+      ],
+      "answer": 1,
+      "explain": "A function with no declared return type implicitly returns (). The setter itself compiles fine; the error surfaces one call later, when you try to call a method on the () it returned."
+    },
+    {
+      "q": "Why do required fields in a builder often get stored as `Option<T>` rather than `T`?",
+      "options": [
+        "Option<T> is required by the derive(Default) macro",
+        "So .build() can check whether the field was actually set and return an Err if not",
+        "Option<T> makes the field mutable",
+        "It has no real purpose, it's just convention"
+      ],
+      "answer": 1,
+      "explain": "Storing a required field as Option<T> lets .build() distinguish 'never set' (None) from 'set', and use .ok_or(...)? to turn a missing value into a proper Err instead of guessing a default."
+    },
+    {
+      "q": "What is `.build()` typically responsible for that a plain struct literal isn't?",
+      "options": [
+        "Serializing the struct to JSON",
+        "Validating that required fields were provided, often returning a Result",
+        "Deleting the builder from memory immediately",
+        "Converting all fields to strings"
+      ],
+      "answer": 1,
+      "explain": "`.build()` is the natural place to check invariants (required fields present, values in valid ranges) and report failure via Result, since it's the single point where construction actually finishes."
+    },
+    {
+      "q": "For a struct with only 2-3 non-optional fields, what does the lesson recommend over a full builder?",
+      "options": [
+        "A global mutable variable",
+        "Default plus struct-update syntax (..Default::default())",
+        "Always still use a builder, no exceptions",
+        "Multiple overloaded new() functions"
+      ],
+      "answer": 1,
+      "explain": "A builder is overhead for small structs. `Point { x: 10, ..Default::default() }` is simpler and does the same job when there's little real optionality."
+    },
+    {
+      "q": "Why does a setter take `self` by value instead of `&self`?",
+      "options": [
+        "&self would be a syntax error in impl blocks",
+        "Taking self by value lets the method consume and return an updated builder, enabling the chain",
+        "Rust requires all methods to take self by value",
+        "It has no effect on chaining either way"
+      ],
+      "answer": 1,
+      "explain": "Consuming self (mut self) means the method owns the builder for its body and can move a modified version back out via the return value — exactly what chaining `.method().method()` needs."
+    },
+    {
+      "q": "What's a real-world example of the builder pattern mentioned in the lesson?",
+      "options": [
+        "std::process::Command",
+        "std::vec::Vec::new()",
+        "println!",
+        "std::mem::swap"
+      ],
+      "answer": 0,
+      "explain": "std::process::Command is a classic standard-library builder: .arg(), .env(), .current_dir() all chain and return Self, ending in .spawn() or .output()."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Why doesn't Rust use constructor overloading for optional struct fields?",
+      "back": "Rust has no constructor overloading and no named/optional function arguments, so a struct with several optional fields needs another idiomatic way to be constructed readably — the builder pattern."
+    },
+    {
+      "front": "What must every setter method in a builder chain return?",
+      "back": "Self. Each setter takes self (or &mut self) and returns Self (or &mut Self) so the next .method() call in the chain has something valid to call on."
+    },
+    {
+      "front": "Where does validation of required fields typically happen in the builder pattern?",
+      "back": "In .build(), which checks that required Option<T> fields were set (often with .ok_or(...)?) and returns a Result so missing data becomes a proper Err instead of a silent bug."
+    },
+    {
+      "front": "When is a builder overkill?",
+      "back": "For a struct with only 2-3 fields and little real optionality — use Default plus struct-update syntax (..Default::default()) instead."
+    },
+    {
+      "front": "What error symptom shows up when a setter forgets to return Self?",
+      "back": "The setter itself compiles fine (it implicitly returns ()), but the NEXT method call in the chain fails with something like 'no method named `X` found for type `()`'."
+    },
+    {
+      "front": "Give two real Rust ecosystem examples of the builder pattern.",
+      "back": "reqwest::Client::builder() and std::process::Command — both use chainable setters returning Self, ending in a final consuming call (.build() or .spawn()/.output())."
+    },
+    {
+      "front": "What does #[derive(Default)] give a builder struct?",
+      "back": "A default() constructor that sets every field to its type's zero value (0, String::new(), false, None, ...), giving you a clean starting point without writing new() by hand."
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "topic": "other-collections",
+  "title": "BTreeMap, VecDeque, and BinaryHeap",
+  "quiz": [
+    {
+      "q": "What's the main advantage BTreeMap has over HashMap?",
+      "options": [
+        "Faster average-case insert and lookup",
+        "Keys are always kept in sorted order, and it supports efficient range queries",
+        "It uses less memory in every case",
+        "It doesn't require the Ord trait"
+      ],
+      "answer": 1,
+      "explain": "HashMap is faster on average (O(1) vs BTreeMap's O(log n)) but gives no order guarantee. BTreeMap trades some speed for always-sorted keys and range() queries."
+    },
+    {
+      "q": "What trait must a BTreeMap's key type implement, and why?",
+      "options": [
+        "Hash, same as HashMap",
+        "Ord, so the map can compare keys to decide sort position",
+        "Copy, so keys can be duplicated",
+        "Default, so missing keys get a placeholder"
+      ],
+      "answer": 1,
+      "explain": "BTreeMap must always know whether one key is less than, equal to, or greater than another to keep itself sorted — that's exactly what Ord provides."
+    },
+    {
+      "q": "For a custom struct like `struct Version { major: u32, minor: u32 }`, what does `#[derive(PartialEq, Eq, PartialOrd, Ord)]` compare first?",
+      "options": [
+        "The fields in alphabetical order by name",
+        "The fields in declaration order — major first, then minor as a tiebreaker",
+        "Only the first field, ignoring the rest",
+        "It picks a random field each time"
+      ],
+      "answer": 1,
+      "explain": "Derived Ord compares struct fields in the order they're declared, using each subsequent field as a tiebreaker — exactly the behavior you want for a version number."
+    },
+    {
+      "q": "Why is VecDeque faster than Vec for adding elements to the front?",
+      "options": [
+        "VecDeque doesn't actually store elements contiguously in memory at all",
+        "VecDeque is a ring buffer, so the logical front can move without shifting every other element; Vec::insert(0, x) has to shift all elements",
+        "VecDeque elements are always smaller",
+        "Vec cannot have a front at all"
+      ],
+      "answer": 1,
+      "explain": "VecDeque treats its buffer as a ring, so push_front is O(1). Vec's elements are always contiguous starting at index 0, so inserting at the front means shifting everything over — O(n)."
+    },
+    {
+      "q": "When should you prefer plain Vec over VecDeque?",
+      "options": [
+        "Never, VecDeque is strictly better",
+        "When you only ever push and pop from the back — Vec has slightly less overhead for that access pattern",
+        "When you need sorted keys",
+        "When you need O(1) lookup by key"
+      ],
+      "answer": 1,
+      "explain": "VecDeque's flexibility (fast at both ends) isn't free, and Vec remains the better default when the front is never touched."
+    },
+    {
+      "q": "By default, what does BinaryHeap::pop() return?",
+      "options": [
+        "The smallest remaining element",
+        "The largest remaining element",
+        "A random remaining element",
+        "The first element pushed, like a queue"
+      ],
+      "answer": 1,
+      "explain": "BinaryHeap is a max-heap by default — pop() always hands back the largest element currently in the heap."
+    },
+    {
+      "q": "How do you get min-heap behavior (smallest first) out of BinaryHeap?",
+      "options": [
+        "Call heap.reverse() before popping",
+        "Wrap pushed values in std::cmp::Reverse, then unwrap after popping",
+        "BinaryHeap cannot do this; use BTreeSet instead",
+        "Pass a comparator argument to BinaryHeap::new()"
+      ],
+      "answer": 1,
+      "explain": "Reverse(x) flips what 'greater' means for x, so the heap's largest-by-Reverse-ordering value is really the smallest wrapped value. Push Reverse(x), pop and destructure Reverse(smallest)."
+    },
+    {
+      "q": "Does iterating a BinaryHeap with `for x in &heap` visit elements in largest-to-smallest order?",
+      "options": [
+        "Yes, always",
+        "No — only repeated .pop() calls guarantee that order; plain iteration visits elements in unspecified internal order",
+        "Only if the heap has fewer than 10 elements",
+        "Only for a min-heap built with Reverse"
+      ],
+      "answer": 1,
+      "explain": "The heap's internal layout is optimized for pop(), not for a sorted walk. Iterating directly does not guarantee any particular order."
+    },
+    {
+      "q": "Which collection would you choose for a sliding window that needs to cheaply drop old items from one end while adding new ones to the other?",
+      "options": [
+        "BinaryHeap, because it always has the max ready",
+        "VecDeque, because push/pop are O(1) at both front and back",
+        "BTreeMap, because keys are sorted",
+        "HashSet, because membership checks are fast"
+      ],
+      "answer": 1,
+      "explain": "A sliding window adds at one end and removes at the other repeatedly — exactly VecDeque's O(1)-both-ends strength."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "BTreeMap vs HashMap — the core trade-off.",
+      "back": "BTreeMap: keys always sorted, O(log n), supports range queries. HashMap: faster average O(1), but no order guarantee."
+    },
+    {
+      "front": "What trait do BTreeMap/BTreeSet keys need?",
+      "back": "Ord (which requires Eq and PartialOrd) — the map needs to compare keys to keep them sorted."
+    },
+    {
+      "front": "How does #[derive(Ord)] order a struct's fields?",
+      "back": "By declaration order: the first field is compared first, subsequent fields break ties in the order they're declared."
+    },
+    {
+      "front": "What makes VecDeque different from Vec?",
+      "back": "VecDeque is a ring buffer with O(1) push/pop at BOTH ends. Vec is O(1) at the back only — the front requires shifting every element, O(n)."
+    },
+    {
+      "front": "When should you still prefer Vec over VecDeque?",
+      "back": "When you only ever push/pop the back — Vec has less overhead for that single-ended access pattern."
+    },
+    {
+      "front": "What does BinaryHeap::pop() return by default?",
+      "back": "The largest remaining element — BinaryHeap is a max-heap by default."
+    },
+    {
+      "front": "How do you build a min-heap using BinaryHeap?",
+      "back": "Wrap each value in std::cmp::Reverse before pushing; std::cmp::Reverse flips the Ord comparison so the 'largest' wrapped value is the smallest real value."
+    },
+    {
+      "front": "Does BinaryHeap guarantee sorted order when you iterate it directly (not via pop)?",
+      "back": "No — only repeated .pop() calls guarantee largest-first order. Direct iteration visits elements in unspecified order."
+    }
+  ]
+}

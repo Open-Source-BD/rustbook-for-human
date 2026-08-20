@@ -1,0 +1,109 @@
+{
+  "topic": "date-and-time",
+  "title": "Dates and time",
+  "quiz": [
+    {
+      "q": "Why is `Instant` preferred over `SystemTime` for measuring elapsed time?",
+      "options": [
+        "Instant is a calendar-aware type",
+        "Instant is monotonic and immune to system clock changes; SystemTime can jump",
+        "SystemTime doesn't exist in std",
+        "Instant returns a Result while SystemTime doesn't"
+      ],
+      "answer": 1,
+      "explain": "Instant only ever moves forward and ignores clock adjustments, making it the right tool for timing code."
+    },
+    {
+      "q": "What does `.elapsed()` on an `Instant` return?",
+      "options": ["A SystemTime", "A DateTime<Utc>", "A Duration", "A String"],
+      "answer": 2,
+      "explain": "elapsed() gives you a Duration — how much time has passed since the Instant was captured."
+    },
+    {
+      "q": "Why does `SystemTime::now().duration_since(UNIX_EPOCH)` return a `Result` instead of a bare `Duration`?",
+      "options": [
+        "Because UNIX_EPOCH might not exist on some platforms",
+        "Because a Duration can never be negative, but the wall clock could theoretically be set before the reference time",
+        "Because duration_since always panics if called twice",
+        "Because Result is required for any function used in main"
+      ],
+      "answer": 1,
+      "explain": "Duration can't represent negative time, and a real wall clock can go backward relative to a reference point — so the API returns Err instead of pretending."
+    },
+    {
+      "q": "Which crate provides real calendar dates, timezones, and formatting in Rust?",
+      "options": ["std::time", "chrono", "regex", "rand"],
+      "answer": 1,
+      "explain": "std has no calendar type at all — chrono is the ecosystem standard for actual dates, timezones, and formatting/parsing."
+    },
+    {
+      "q": "What's wrong with calling `.format(\"%Y-%m-%d\")` on an `Instant`?",
+      "options": [
+        "Nothing, it works fine",
+        "Instant has no .format method — it's an opaque stopwatch reading with no calendar meaning",
+        "It only works on chrono::Local values",
+        "\"%Y-%m-%d\" is invalid format syntax everywhere"
+      ],
+      "answer": 1,
+      "explain": "Instant isn't tied to any calendar date at all, so it has no .format method. Formatting is a chrono DateTime operation."
+    },
+    {
+      "q": "What's the difference between `%m` and `%M` in a chrono format string?",
+      "options": [
+        "No difference, they're interchangeable",
+        "%m is month, %M is minutes",
+        "%m is minutes, %M is month",
+        "Both mean 'month' in different locales"
+      ],
+      "answer": 1,
+      "explain": "One letter's case flips the whole field — %m is the month, %M is minutes. Worth double-checking against real output."
+    },
+    {
+      "q": "Why be careful comparing `DateTime<Utc>` and `DateTime<Local>` directly?",
+      "options": [
+        "They can never be compared — it's a compile error",
+        "They represent the same instant differently depending on machine timezone, causing off-by-hours bugs if not converted first",
+        "Local time is always computed faster",
+        "chrono has deprecated the Local type"
+      ],
+      "answer": 1,
+      "explain": "Comparing across timezones without normalizing to the same one first is a classic source of subtle bugs."
+    },
+    {
+      "q": "Which type would you reach for to time how long a function call takes?",
+      "options": ["SystemTime", "chrono::Utc", "Instant", "DateTime<Local>"],
+      "answer": 2,
+      "explain": "Instant + .elapsed() is built specifically for measuring durations, immune to wall-clock adjustments."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does Instant::now() + .elapsed() give you?",
+      "back": "A monotonic measurement of elapsed time, immune to system clock changes — use it for timing code."
+    },
+    {
+      "front": "What does SystemTime represent?",
+      "back": "Real wall-clock time, which can jump if the system clock is adjusted — use it for timestamps, not measuring durations."
+    },
+    {
+      "front": "Why does duration_since return a Result?",
+      "back": "Because a Duration can never be negative, and a wall clock can genuinely go backward relative to a reference point."
+    },
+    {
+      "front": "What calendar features does std::time provide?",
+      "back": "None — no year, month, day, or timezone. For real calendar dates, use the chrono crate."
+    },
+    {
+      "front": "What does chrono::Utc::now() return?",
+      "back": "A DateTime<Utc> — a real calendar timestamp that knows its own timezone."
+    },
+    {
+      "front": "How do you format a chrono DateTime as text?",
+      "back": "Call .format(\"%Y-%m-%d\") (or any strftime-style pattern) on it."
+    },
+    {
+      "front": "What's a classic timezone bug to watch for?",
+      "back": "Comparing a Utc time to a Local time directly without converting one to match the other first."
+    }
+  ]
+}

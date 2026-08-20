@@ -1,0 +1,114 @@
+{
+  "topic": "environment-and-config",
+  "title": "Environment variables and config",
+  "quiz": [
+    {
+      "q": "What does `std::env::var(\"KEY\")` return when KEY isn't set?",
+      "options": [
+        "An empty String",
+        "Err(VarError::NotPresent)",
+        "It panics immediately",
+        "None"
+      ],
+      "answer": 1,
+      "explain": "env::var returns Result<String, VarError>. A missing variable is an Err, never a silent empty string — Rust won't let 'missing' and 'set to empty' look the same."
+    },
+    {
+      "q": "Why shouldn't real secrets live in a committed `.env` file?",
+      "options": [
+        "Rust refuses to compile projects with .env files",
+        ".env files only work in test builds",
+        "Once a secret is in git history, it's compromised — rotating it is the only real fix",
+        "dotenvy encrypts the file automatically, so it's fine either way"
+      ],
+      "answer": 2,
+      "explain": "A committed .env eventually ends up in every clone and fork forever. Treat it as local-dev convenience only; real secrets belong in the platform's secret manager."
+    },
+    {
+      "q": "When should `dotenvy::dotenv()` be called?",
+      "options": [
+        "At the very end of main, after all env::var calls",
+        "Once, early in main, before you read anything with env::var",
+        "Inside every function that needs an env var",
+        "It's called automatically by Cargo before main runs"
+      ],
+      "answer": 1,
+      "explain": "It has to run before the reads that depend on it — calling it late means the vars it would have loaded aren't there yet."
+    },
+    {
+      "q": "Why deserialize config into a `#[derive(Deserialize)]` struct instead of many loose `env::var` calls?",
+      "options": [
+        "It's the only way to read a file in Rust",
+        "Field types are checked, and a missing or wrong field gives one clear error instead of scattered bugs",
+        "It removes the need for a Cargo.toml file",
+        "env::var can't return numeric values at all"
+      ],
+      "answer": 1,
+      "explain": "Once you have more than a couple of related settings, a typed struct catches problems at startup with one clear message instead of tracking down a bug three functions later."
+    },
+    {
+      "q": "What's the problem with `env::var(\"KEY\").unwrap_or_default()` for a setting that must be configured correctly?",
+      "options": [
+        "It doesn't compile",
+        "It silently treats 'missing' the same as 'set to empty on purpose,' hiding real misconfiguration",
+        "It always panics on success",
+        "unwrap_or_default() doesn't exist on Result"
+      ],
+      "answer": 1,
+      "explain": "Falling back to a default on error can be fine for optional settings, but it can also mask a real problem — a required var that's simply not set."
+    },
+    {
+      "q": "Which crate does this lesson use to load a `.env` file into the process environment?",
+      "options": ["serde", "toml", "dotenvy", "clap"],
+      "answer": 2,
+      "explain": "dotenvy::dotenv() reads a .env file and copies its key-value pairs into the process environment, so env::var finds them normally afterward."
+    },
+    {
+      "q": "What should a committed `.env.example` file contain?",
+      "options": [
+        "Real production secrets",
+        "Nothing — it should be an empty file",
+        "The key names with fake/placeholder values, no real secrets",
+        "A copy of Cargo.lock"
+      ],
+      "answer": 2,
+      "explain": ".env.example documents which variables a project needs without leaking any actual secret values."
+    },
+    {
+      "q": "What is the return type of `env::var(\"KEY\")`?",
+      "options": ["String", "Option<String>", "Result<String, VarError>", "&str"],
+      "answer": 2,
+      "explain": "It's a Result, not a String — reading the environment can fail (the variable might not exist), so the type says so."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does std::env::var(\"KEY\") return?",
+      "back": "Result<String, VarError> — Ok(value) if set, Err if missing. Never a silent empty string."
+    },
+    {
+      "front": "Where should real secrets live for production?",
+      "back": "In the platform's real secret manager — never in a committed .env file. .env is for local dev convenience only."
+    },
+    {
+      "front": "When should dotenvy::dotenv() be called?",
+      "back": "Once, at the very top of main, before any env::var reads that depend on it."
+    },
+    {
+      "front": "What's the safer alternative to committing a real .env file?",
+      "back": "Add .env to .gitignore and commit a .env.example with key names but no real values."
+    },
+    {
+      "front": "When should you switch from loose env::var calls to a config struct?",
+      "back": "Once you have more than a couple of related settings — deserialize a TOML/JSON file into a #[derive(Deserialize)] struct instead."
+    },
+    {
+      "front": "Why prefer .expect(\"message\") over bare .unwrap() on a required env var?",
+      "back": ".expect gives a clear, custom message about exactly what's missing; bare .unwrap() just says 'called unwrap on an Err value.'"
+    },
+    {
+      "front": "What crate/function deserializes a TOML file into a struct?",
+      "back": "toml::from_str, combined with #[derive(Deserialize)] from serde on the target struct."
+    }
+  ]
+}

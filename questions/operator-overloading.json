@@ -1,0 +1,124 @@
+{
+  "topic": "operator-overloading",
+  "title": "Operator overloading",
+  "quiz": [
+    {
+      "q": "What does `a + b` actually desugar to in Rust?",
+      "options": [
+        "A special compiler intrinsic with no trait involved",
+        "Add::add(a, b)",
+        "a.plus(b)",
+        "std::ops::plus(a, b)"
+      ],
+      "answer": 1,
+      "explain": "Every operator in Rust is shorthand for a trait method call. `+` specifically maps to the Add trait's add method."
+    },
+    {
+      "q": "Which trait must you implement to make `p1 + p2` work for a custom struct Point?",
+      "options": [
+        "std::ops::Add",
+        "std::ops::Index",
+        "std::cmp::PartialEq",
+        "std::fmt::Display"
+      ],
+      "answer": 0,
+      "explain": "Add is the trait behind the + operator. It has an associated Output type and an add(self, rhs) -> Output method."
+    },
+    {
+      "q": "What does implementing Index<(usize, usize)> for a Grid type enable?",
+      "options": [
+        "grid.get(row, col)",
+        "grid[(row, col)] subscript syntax",
+        "Automatic sorting of grid cells",
+        "grid == grid comparisons"
+      ],
+      "answer": 1,
+      "explain": "Index (and IndexMut for read-write) is the trait behind [] syntax — implementing it for your own type lets container[key] work."
+    },
+    {
+      "q": "A type implements Add but a program tries to use `p += other`. What happens?",
+      "options": [
+        "It works automatically since += is just repeated +",
+        "It fails to compile — AddAssign is a separate trait from Add and must be implemented separately",
+        "It compiles but silently does nothing",
+        "It only works if the type is Copy"
+      ],
+      "answer": 1,
+      "explain": "+= is backed by the AddAssign trait, distinct from Add. Implementing Add does not give you += for free — you must implement AddAssign too."
+    },
+    {
+      "q": "Why does `impl Add for Point` typically require Point to be Copy (or otherwise handle ownership explicitly)?",
+      "options": [
+        "Because Add requires Copy by definition and won't compile otherwise",
+        "Because Add::add takes self by value, which moves (or copies, for Copy types) the left-hand operand",
+        "Because Rust requires all operator traits to only work on Copy types",
+        "It has nothing to do with ownership at all"
+      ],
+      "answer": 1,
+      "explain": "Most std::ops traits consume self by value. For a Copy type, p1 + p2 copies p1 instead of moving it, so p1 remains usable afterward. For non-Copy types you'd need to implement Add for references or accept the move."
+    },
+    {
+      "q": "When is operator overloading a GOOD idea according to the lesson's judgment call?",
+      "options": [
+        "Whenever it saves a few characters of typing",
+        "When the operator's meaning is exactly what a reader would expect from ordinary math or collection syntax",
+        "Only for numeric types built into std",
+        "Never — named methods are always better"
+      ],
+      "answer": 1,
+      "explain": "Point + Point reading as vector addition, or grid[(row, col)] reading as indexing, are cases where the operator's meaning is obvious and unsurprising — that's when overloading helps rather than confuses."
+    },
+    {
+      "q": "Why is `+` with side effects (like writing to a file) considered a mistake?",
+      "options": [
+        "Because it would cause a compile error",
+        "Because readers bring assumptions to + from ordinary math and don't expect side effects or mutation",
+        "Because + can only be implemented for numeric types",
+        "It isn't a mistake, it's fine practice"
+      ],
+      "answer": 1,
+      "explain": "Operators carry implicit expectations. A + that mutates or has side effects violates those expectations — a named method (like log.append(entry)) communicates intent far more clearly."
+    },
+    {
+      "q": "What does Index::index return, and how does `grid[(1, 2)]` end up as a value instead of a reference?",
+      "options": [
+        "index returns a value directly; no dereferencing happens",
+        "index returns a reference (&Output), and the [] syntax automatically dereferences it",
+        "index always panics and grid[] never actually calls it",
+        "grid[(1,2)] calls .clone() internally on Output"
+      ],
+      "answer": 1,
+      "explain": "Index::index returns &Output. The compiler's desugaring of container[key] automatically dereferences that reference, so you see the value directly."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does `a + b` desugar to in Rust?",
+      "back": "Add::add(a, b). Every operator is a trait method call under familiar symbolic syntax."
+    },
+    {
+      "front": "Which trait/method pair implements the + operator for a custom type?",
+      "back": "std::ops::Add, with an associated type Output and a method fn add(self, rhs: Self) -> Self::Output."
+    },
+    {
+      "front": "Which trait powers container[key] syntax?",
+      "back": "std::ops::Index (read) and std::ops::IndexMut (read-write). index() returns &Output, which [] auto-dereferences."
+    },
+    {
+      "front": "Does implementing Add give you += for free?",
+      "back": "No. += is backed by a separate trait, AddAssign, with its own add_assign(&mut self, rhs) method. You must implement it separately."
+    },
+    {
+      "front": "Why does Point usually derive Copy when implementing Add?",
+      "back": "Most std::ops traits take self by value, which moves the operand. Deriving Copy means p1 + p2 copies p1 instead of consuming it, so p1 stays usable afterward."
+    },
+    {
+      "front": "When should you overload an operator vs use a named method?",
+      "back": "Overload when the meaning is unambiguous and matches what a reader expects from ordinary math/collection syntax (Point + Point, grid[(r,c)]). Use a named method when the operator's meaning would surprise the reader (e.g. a + with side effects)."
+    },
+    {
+      "front": "Name three operators and their backing std::ops traits.",
+      "back": "+ -> Add, - -> Sub, * -> Mul (also += -> AddAssign, -= -> SubAssign, [] -> Index/IndexMut)."
+    }
+  ]
+}

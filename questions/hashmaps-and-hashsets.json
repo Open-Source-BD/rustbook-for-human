@@ -1,0 +1,128 @@
+{
+  "topic": "hashmaps-and-hashsets",
+  "title": "HashMaps and HashSets",
+  "quiz": [
+    {
+      "q": "What's the core difference between how Vec and HashMap find things?",
+      "options": [
+        "Vec finds by key, HashMap finds by position",
+        "Vec finds by position (index), HashMap finds by a key you choose",
+        "There is no difference, they are interchangeable",
+        "HashMap can only store numbers"
+      ],
+      "answer": 1,
+      "explain": "Vec is ordered and positional (index 0, 1, 2...). HashMap looks values up by an arbitrary key you choose, like a name or id."
+    },
+    {
+      "q": "What happens when you `.insert()` a key into a HashMap that's already present?",
+      "options": [
+        "It's a compile error",
+        "It panics at runtime",
+        "The old value is silently overwritten by the new one",
+        "Both values are kept in a list under that key"
+      ],
+      "answer": 2,
+      "explain": "insert() on an existing key replaces its value. A map holds each key exactly once. Check the Option returned by insert() if you need to know whether it overwrote something."
+    },
+    {
+      "q": "What does `counts.entry(word).or_insert(0)` do?",
+      "options": [
+        "Always inserts 0, overwriting any existing count",
+        "Returns a mutable reference to the value for word, inserting 0 first only if the key was missing",
+        "Deletes the entry for word if it exists",
+        "Returns a copy of the value, not a reference"
+      ],
+      "answer": 1,
+      "explain": "entry().or_insert() is the one-lookup insert-or-update pattern: it gives you &mut V pointing at the (possibly newly-inserted) slot, so you can modify it directly, e.g. with *count += 1."
+    },
+    {
+      "q": "Why does `HashMap<Point, bool>` fail to compile if Point is a plain struct with no derives?",
+      "options": [
+        "HashMap values must be primitives",
+        "Point needs Eq and Hash implementations so the map can hash it into a bucket and confirm key equality",
+        "Structs can never be used as generic parameters",
+        "bool cannot be a HashMap value type"
+      ],
+      "answer": 1,
+      "explain": "A HashMap key must be hashable (Hash) and comparable for equality (Eq) so lookups work. #[derive(PartialEq, Eq, Hash)] adds both automatically."
+    },
+    {
+      "q": "Why does deriving Hash on a struct also require deriving Eq (not just PartialEq)?",
+      "options": [
+        "It doesn't — PartialEq alone is enough",
+        "Eq promises the equality check is total and reflexive, which the map relies on when confirming 'same hash bucket, so same key'",
+        "Eq makes hashing faster",
+        "Hash and Eq are unrelated and this is a coincidence"
+      ],
+      "answer": 1,
+      "explain": "Hash + Eq together let the map trust that two values hashing to the same bucket really are the same key when compared. PartialEq alone doesn't give that total-equality guarantee."
+    },
+    {
+      "q": "What does HashSet::insert(value) return, and what's it useful for?",
+      "options": [
+        "Nothing (unit type)",
+        "true if the value was newly added, false if it was already present — useful for 'have I seen this before' checks",
+        "The number of elements now in the set",
+        "A reference to the inserted value"
+      ],
+      "answer": 1,
+      "explain": "The boolean return of insert() is what lets you write 'if seen.insert(word) { println!(\"new word\") }' as a one-line first-sighting check."
+    },
+    {
+      "q": "Is HashMap iteration order guaranteed to match insertion order?",
+      "options": [
+        "Yes, always",
+        "No — order is unspecified and can even change between runs of the same program",
+        "Only for HashMap<String, _>",
+        "Only if you call .sort() first"
+      ],
+      "answer": 1,
+      "explain": "Keys are scattered by hash for fast lookup, with no relation to insertion order, and Rust randomizes the hash seed per process as a DoS defense."
+    },
+    {
+      "q": "Which collection should you reach for when you need sorted iteration over key/value pairs?",
+      "options": [
+        "HashMap, since it's the default",
+        "BTreeMap, which keeps keys in sorted order by design",
+        "Vec of tuples, always",
+        "HashSet"
+      ],
+      "answer": 1,
+      "explain": "HashMap makes no order guarantee. BTreeMap is built specifically to keep keys sorted at all times."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Vec vs HashMap — how do they find elements?",
+      "back": "Vec finds by position (index). HashMap finds by an arbitrary key you choose."
+    },
+    {
+      "front": "What does map.insert(k, v) do if k already exists?",
+      "back": "Overwrites the existing value silently. insert() returns Some(old_value) if it overwrote, None if the key was new."
+    },
+    {
+      "front": "The entry API insert-or-update pattern.",
+      "back": "map.entry(key).or_insert(default) returns &mut V to the slot, inserting default first only if missing — one lookup instead of get-then-insert."
+    },
+    {
+      "front": "What traits does a custom struct need to be a HashMap key?",
+      "back": "#[derive(PartialEq, Eq, Hash)] — Eq for key equality checks, Hash for placing it in the right bucket."
+    },
+    {
+      "front": "What is a HashSet conceptually?",
+      "back": "A HashMap<T, ()> in spirit — tracks which keys/values exist with no attached value, for membership and uniqueness checks."
+    },
+    {
+      "front": "What does HashSet::insert() return, and why is that useful?",
+      "back": "true if newly added, false if already present — lets you detect 'first time seeing this value' in one call."
+    },
+    {
+      "front": "Is HashMap iteration order predictable?",
+      "back": "No — unspecified, and can differ between runs of the same program due to per-process hash seed randomization."
+    },
+    {
+      "front": "When should you use HashSet::contains vs Vec::contains?",
+      "back": "HashSet::contains is O(1) on average; Vec::contains scans linearly, O(n). Prefer HashSet for frequent membership checks."
+    }
+  ]
+}

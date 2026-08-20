@@ -1,0 +1,139 @@
+{
+  "topic": "traits-basics",
+  "title": "Traits",
+  "quiz": [
+    {
+      "q": "What does a trait definition actually contain?",
+      "options": [
+        "Field declarations only",
+        "Method signatures (and optionally default bodies) describing behavior a type promises to provide",
+        "A list of concrete types allowed to use it",
+        "Compiled machine code shared between types"
+      ],
+      "answer": 1,
+      "explain": "A trait lists method signatures — the shape of the promise. A type keeps that promise by writing an `impl Trait for Type` block."
+    },
+    {
+      "q": "You wrote `trait Greet { fn hello(&self) -> String; }` but never wrote `impl Greet for Dog`. What happens when you call `dog.hello()`?",
+      "options": [
+        "It compiles and returns an empty string",
+        "It compiles using a default implementation",
+        "Compile error: no method named 'hello' found for 'Dog'",
+        "It panics at runtime"
+      ],
+      "answer": 2,
+      "explain": "A trait alone does nothing for a type. Without an impl block, Dog never kept the promise, so the compiler can't find the method."
+    },
+    {
+      "q": "In a trait definition, what's the difference between `fn hello(&self) -> String;` and `fn hello(&self) -> String { ... }`?",
+      "options": [
+        "No difference, both are required methods",
+        "The first is a required method (implementers must write it); the second is a default method (implementers get it for free unless they override it)",
+        "The first is faster at runtime",
+        "The second can only be used with generics"
+      ],
+      "answer": 1,
+      "explain": "A `;` means no body — every implementer must supply one. A body in the trait itself is a default that implementers inherit automatically."
+    },
+    {
+      "q": "What is the effect of a default method in a trait?",
+      "options": [
+        "It forces every implementer to override it",
+        "It provides behavior automatically to any type that implements the trait, unless that type chooses to override it",
+        "It only works for the first type that implements the trait",
+        "It removes the need for an impl block entirely"
+      ],
+      "answer": 1,
+      "explain": "Types that implement the trait get the default method's behavior for free — they only need to write it themselves if they want different behavior."
+    },
+    {
+      "q": "`fn f<T>(x: T) { x.summarize(); }` fails to compile with 'no method named summarize found for type parameter T'. Why?",
+      "options": [
+        "summarize() doesn't exist anywhere in the program",
+        "T has no trait bound, so the compiler has no information that T has a summarize method",
+        "Generic functions can never call methods",
+        "x needs to be borrowed with &"
+      ],
+      "answer": 1,
+      "explain": "An unbounded generic type parameter could be literally anything. Without `T: Summary`, the compiler can't assume summarize() exists."
+    },
+    {
+      "q": "When must you use `fn f<T: Trait>(x: T, y: T)` instead of `fn f(x: &impl Trait, y: &impl Trait)`?",
+      "options": [
+        "Never, they are always interchangeable",
+        "When you need to guarantee x and y are the same concrete type",
+        "When the trait has default methods",
+        "When the function returns a value"
+      ],
+      "answer": 1,
+      "explain": "`impl Trait` sugar creates an independent anonymous type per parameter, so it can't express 'same T twice.' The generic form with a named T can."
+    },
+    {
+      "q": "What is the purpose of a `where` clause on a generic function?",
+      "options": [
+        "It changes the runtime behavior of the function",
+        "It's purely a readability tool — it expresses the exact same bounds as `<T: ...>`, just moved below the signature",
+        "It allows bounds that `<T: Trait>` cannot express",
+        "It's required whenever a function has more than one type parameter"
+      ],
+      "answer": 1,
+      "explain": "`where` clauses are syntactic sugar for the same bounds you could put inline in `<...>`. They exist to keep signatures with multiple/combined bounds readable."
+    },
+    {
+      "q": "Why is it misleading to think of a trait as a 'base class'?",
+      "options": [
+        "Traits can only be implemented once per program",
+        "Traits describe capabilities ('can do'), not an inheritance hierarchy ('is a'), and carry no data of their own",
+        "Traits cannot have default methods",
+        "Traits are only used for printing"
+      ],
+      "answer": 1,
+      "explain": "A type can implement many unrelated traits with none of them being a 'parent.' Traits are behavior contracts, not a place to store fields."
+    },
+    {
+      "q": "A trait method has `&self` as its first parameter. What does that mean?",
+      "options": [
+        "The method takes ownership of the value it's called on",
+        "The method borrows the value it's called on, without taking ownership",
+        "The method is static and needs no instance",
+        "The method can only be called once"
+      ],
+      "answer": 1,
+      "explain": "`&self` borrows the receiver, the same way any other `&` reference borrows a value — the caller keeps ownership."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a trait?",
+      "back": "A named list of method signatures a type promises to provide — a behavior contract, not inheritance."
+    },
+    {
+      "front": "How does a type keep a trait's promise?",
+      "back": "By writing `impl TraitName for TypeName { ... }` with real bodies for each required method."
+    },
+    {
+      "front": "Required method vs default method in a trait definition — how do you tell them apart?",
+      "back": "Required: signature ends in `;`, no body — implementers must write it. Default: signature has a `{ ... }` body — implementers get it free, can override it."
+    },
+    {
+      "front": "Two equivalent ways to write a trait-bounded function parameter.",
+      "back": "`fn f(x: &impl Trait)` (sugar) and `fn f<T: Trait>(x: &T)` (explicit generic) — same meaning for a single parameter."
+    },
+    {
+      "front": "When do you need `<T: Trait>` instead of `impl Trait` sugar?",
+      "back": "When the same type parameter must appear more than once and be guaranteed identical each time, e.g. `fn cmp<T: PartialEq>(a: T, b: T)`."
+    },
+    {
+      "front": "What does a `where` clause do that inline `<T: Bound>` doesn't?",
+      "back": "Nothing functionally — it's the same bounds, just written below the signature for readability once there are multiple bounds or type parameters."
+    },
+    {
+      "front": "What error do you get calling a trait method on an unbounded generic `T`?",
+      "back": "\"no method named '...' found for type parameter 'T'\" — the fix is adding the trait bound, e.g. `<T: Summary>`."
+    },
+    {
+      "front": "\"Can do\" vs \"is a\" — which describes traits?",
+      "back": "\"Can do.\" Traits are capabilities a type has, not a parent-child inheritance relationship, and they carry no fields."
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "topic": "process-and-command",
+  "title": "Args, exit codes, and subprocesses",
+  "quiz": [
+    {
+      "q": "What is the first element yielded by `std::env::args()`?",
+      "options": [
+        "The first CLI argument the user typed",
+        "The program's own name/path",
+        "Always an empty string",
+        "The current username"
+      ],
+      "answer": 1,
+      "explain": "Just like argv[0] in C, the first element is the program itself — skip it with .skip(1) before parsing real arguments."
+    },
+    {
+      "q": "What's the key difference between returning `ExitCode` from `main` and calling `std::process::exit()`?",
+      "options": [
+        "No real difference, they're interchangeable",
+        "exit() runs Drop for everything on the stack, returning ExitCode doesn't",
+        "Returning ExitCode runs Drop normally; process::exit() skips Drop entirely",
+        "ExitCode can only ever be 0 or 1"
+      ],
+      "answer": 2,
+      "explain": "Returning from main is a normal function return, so destructors run. process::exit() terminates immediately and skips Drop for anything still on the stack."
+    },
+    {
+      "q": "What does `Command::output()` give you?",
+      "options": [
+        "Nothing — it just runs the subprocess silently with no way to inspect it",
+        "Captured stdout/stderr as bytes, plus the exit status — nothing prints automatically",
+        "Direct terminal output only, with no way to capture it",
+        "A live streaming iterator of the subprocess's output"
+      ],
+      "answer": 1,
+      "explain": "output() buffers stdout and stderr into memory as Vec<u8> and returns them alongside the exit status. You have to print them yourself if you want them visible."
+    },
+    {
+      "q": "How does `Command::status()` behave differently from `.output()`?",
+      "options": [
+        "It doesn't actually run the subprocess",
+        "It inherits the parent's stdin/stdout/stderr directly and only returns the exit status",
+        "It captures stdout but not stderr",
+        "It behaves identically to .output()"
+      ],
+      "answer": 1,
+      "explain": "status() lets the subprocess's output go straight to the real terminal, exactly as if you'd run it yourself, and hands back only the exit status."
+    },
+    {
+      "q": "Why does a bare `return;` fail to compile inside `fn main() -> ExitCode`?",
+      "options": [
+        "return is never allowed anywhere in Rust",
+        "return; produces (), which doesn't match the required ExitCode return type",
+        "ExitCode requires an async main function",
+        "main is never allowed to return early"
+      ],
+      "answer": 1,
+      "explain": "Every path out of a function must match its declared return type. A bare return; yields (), a type mismatch against ExitCode."
+    },
+    {
+      "q": "Does a subprocess spawning without error guarantee it succeeded at its job?",
+      "options": [
+        "Yes — if Command runs without error, the subprocess always succeeded",
+        "No — you must check the exit status separately, since the subprocess can run and still fail its own task",
+        "Yes, but only when using .status()",
+        "No — spawning itself can never succeed"
+      ],
+      "answer": 1,
+      "explain": "Spawning and running are separate from the subprocess's own result. Always check output.status.success() (or status.success())."
+    },
+    {
+      "q": "Why prefer returning `ExitCode` from `main` over calling `process::exit` mid-function?",
+      "options": [
+        "process::exit is deprecated in current Rust",
+        "process::exit is measurably slower to execute",
+        "process::exit skips Drop for values still on the stack, so cleanup like flushing or releasing locks may not run",
+        "ExitCode is required by Cargo's build system"
+      ],
+      "answer": 2,
+      "explain": "If anything on the stack needs cleanup when the program ends, returning ExitCode lets that cleanup run; process::exit cuts straight through it."
+    },
+    {
+      "q": "What Rust type holds a subprocess's captured result from `.output()`?",
+      "options": [
+        "A plain String",
+        "ExitCode",
+        "Output, with stdout/stderr as Vec<u8> fields and a status field",
+        "Command itself"
+      ],
+      "answer": 2,
+      "explain": "output() returns io::Result<Output>, where Output bundles captured stdout, stderr, and the exit status together."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What's always the first element of std::env::args()?",
+      "back": "The program's own name/path — skip it with .skip(1) before parsing real arguments."
+    },
+    {
+      "front": "What does std::process::exit() skip that returning normally doesn't?",
+      "back": "It skips running Drop for everything still on the stack — no destructors run on the way out."
+    },
+    {
+      "front": "When should you prefer ExitCode over process::exit()?",
+      "back": "Whenever something on the stack needs cleanup (flushing a file, releasing a lock) — returning ExitCode lets Drop run normally."
+    },
+    {
+      "front": "What does Command::output() capture?",
+      "back": "The subprocess's stdout and stderr as bytes (Vec<u8>), plus its exit status — nothing prints to your terminal automatically."
+    },
+    {
+      "front": "What does Command::status() do with the subprocess's streams?",
+      "back": "Lets them inherit the parent's stdin/stdout/stderr directly, so output appears on the real terminal; you only get back the exit status."
+    },
+    {
+      "front": "How do you check whether a subprocess actually succeeded, not just spawned?",
+      "back": "Check output.status.success() (or status.success()) — spawning without error doesn't mean the subprocess's own job succeeded."
+    },
+    {
+      "front": "What value does a bare `return;` produce?",
+      "back": "() — the empty tuple. In a function that must return ExitCode, that's a type mismatch."
+    }
+  ]
+}

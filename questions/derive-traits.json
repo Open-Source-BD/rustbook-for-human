@@ -1,0 +1,134 @@
+{
+  "topic": "derive-traits",
+  "title": "Derivable traits",
+  "quiz": [
+    {
+      "q": "What does `#[derive(Debug)]` generate?",
+      "options": [
+        "A Display implementation",
+        "A Debug implementation that prints the type's name and fields",
+        "An equality implementation",
+        "A default constructor"
+      ],
+      "answer": 1,
+      "explain": "It generates a Debug impl usable with {:?}, printing the type's name and every field's value."
+    },
+    {
+      "q": "Why does `Copy` require `Clone`?",
+      "options": [
+        "It doesn't — they're unrelated traits",
+        "Copy is defined as `trait Copy: Clone`, so any Copy type is also a Clone type",
+        "Clone requires Copy, not the other way around",
+        "It's a historical accident with no real reason"
+      ],
+      "answer": 1,
+      "explain": "Copy is bounded by Clone (`Copy: Clone`) — a Copy type is always also Clone, since copying is the cheap, implicit version of cloning."
+    },
+    {
+      "q": "Why can't a struct with a `String` field derive `Copy`?",
+      "options": [
+        "Strings are too large for Copy",
+        "String owns heap data and can't be safely duplicated by copying bits; it only implements Clone, not Copy",
+        "Copy only works on enums",
+        "You need to derive PartialEq first"
+      ],
+      "answer": 1,
+      "explain": "Copy requires every field to itself be Copy. String owns a heap allocation and only implements Clone, so a struct containing it can't derive Copy."
+    },
+    {
+      "q": "Why can't `f64` derive `Eq` or `Ord`?",
+      "options": [
+        "Floats are too imprecise for any comparison",
+        "NaN != NaN breaks the reflexivity Eq/Ord require, so floats only implement PartialEq/PartialOrd",
+        "f64 doesn't support == at all",
+        "Eq only works on integer types"
+      ],
+      "answer": 1,
+      "explain": "Eq promises full reflexivity (a == a is always true), which NaN violates; floats implement PartialEq/PartialOrd but not the stricter Eq/Ord."
+    },
+    {
+      "q": "What determines the sort order for a struct with `#[derive(PartialOrd, Ord)]`?",
+      "options": [
+        "Alphabetical order of the field names",
+        "The order the fields are declared in the struct, most significant first",
+        "The field types' sizes in bytes",
+        "It's random unless you specify a key"
+      ],
+      "answer": 1,
+      "explain": "Derived ordering compares fields in declaration order, exactly like comparing a tuple — the first field is the most significant."
+    },
+    {
+      "q": "What happens if you `#[derive(Debug)]` on a struct where one field's type doesn't implement Debug?",
+      "options": [
+        "That field is skipped in the output",
+        "The whole struct fails to compile",
+        "It prints \"?\" for that field",
+        "It falls back to Display for that field"
+      ],
+      "answer": 1,
+      "explain": "Deriving requires every field to implement the trait; one field missing Debug fails the entire derive at compile time, not just that field."
+    },
+    {
+      "q": "What does `..Default::default()` do in a struct literal?",
+      "options": [
+        "Copies every field from a previous instance of the same value",
+        "Fills in any fields you didn't explicitly set with their type's Default value",
+        "Only works if the struct implements Copy first",
+        "Only applies to tuple structs"
+      ],
+      "answer": 1,
+      "explain": "It's struct update syntax combined with Default — you set the fields you care about, and the rest fall back to Default::default() for their types."
+    },
+    {
+      "q": "When should you hand-write a trait instead of deriving it?",
+      "options": [
+        "Never — always derive when possible",
+        "When the mechanical field-by-field behavior isn't what you actually want, e.g. custom equality that ignores one field",
+        "Hand-writing is always required for Debug specifically",
+        "Only for enums, never structs"
+      ],
+      "answer": 1,
+      "explain": "Deriving gives you the mechanical field-by-field version; hand-write when semantics should differ, like case-insensitive equality or ordering by a subset of fields."
+    },
+    {
+      "q": "What does `HashMap`/`HashSet` require of its key type?",
+      "options": ["Only Debug", "Both Eq and Hash", "Only PartialOrd", "Only Clone"],
+      "answer": 1,
+      "explain": "Keys need Eq (so equal keys are recognized as the same key) and Hash (so equal keys land in the same bucket)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does #[derive(Debug)] give you?",
+      "back": "An implementation of the Debug trait, enabling {:?} printing of the type's name and fields."
+    },
+    {
+      "front": "Clone vs Copy — what's the practical difference?",
+      "back": "Clone is an explicit .clone() call (deep copy); Copy makes assignment implicitly duplicate the value instead of moving it."
+    },
+    {
+      "front": "What must be true of every field for a struct to derive Copy?",
+      "back": "Every field must itself implement Copy — no String, Vec, Box, or other heap-owning type."
+    },
+    {
+      "front": "Why can't f64 implement Eq?",
+      "back": "Because NaN != NaN violates the reflexivity Eq requires; f64 only implements PartialEq."
+    },
+    {
+      "front": "What order does derived PartialOrd/Ord compare struct fields in?",
+      "back": "Declaration order, top to bottom — like comparing a tuple, first field most significant."
+    },
+    {
+      "front": "What does Hash + Eq together enable?",
+      "back": "Using the type as a key in a HashMap or HashSet."
+    },
+    {
+      "front": "What happens when you derive a trait but one field doesn't implement it?",
+      "back": "The whole derive fails to compile — it isn't silently skipped."
+    },
+    {
+      "front": "Give one reason to hand-write PartialEq instead of deriving it.",
+      "back": "When equality should ignore some fields (e.g. an internal cache) or use custom logic (e.g. case-insensitive string comparison)."
+    }
+  ]
+}

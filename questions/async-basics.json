@@ -1,0 +1,128 @@
+{
+  "topic": "async-basics",
+  "title": "Async and await basics",
+  "quiz": [
+    {
+      "q": "What actually happens when you call an `async fn`?",
+      "options": [
+        "The function body runs immediately, like a normal function",
+        "Rust returns a `Future` without running the body",
+        "Rust spawns a new OS thread to run it",
+        "The call blocks until the result is ready"
+      ],
+      "answer": 1,
+      "explain": "Calling an async fn only builds a Future — an inert state machine sitting at step zero. The body doesn't execute until something polls/awaits it."
+    },
+    {
+      "q": "An `async fn` has a `println!` as its first line. You call the function but never `.await` it. Does the `println!` run?",
+      "options": [
+        "Yes, calling always runs the first line",
+        "No — calling an async fn only constructs a Future; nothing inside runs until it's driven",
+        "Only if the function has no arguments",
+        "Only in debug builds"
+      ],
+      "answer": 1,
+      "explain": "The function body is completely inert until the Future is polled by an .await or an executor. Calling it alone never executes a single line inside."
+    },
+    {
+      "q": "Where is `.await` legal to write?",
+      "options": [
+        "Anywhere in any function",
+        "Only inside an `async fn` or `async` block",
+        "Only inside `fn main`",
+        "Only inside a closure"
+      ],
+      "answer": 1,
+      "explain": ".await can only appear inside async code, because only that code has been rewritten by the compiler into a pollable state machine that knows how to pause and resume."
+    },
+    {
+      "q": "What compile error do you get from writing `value.await` inside a plain (non-async) `fn main()`?",
+      "options": [
+        "E0502 — cannot borrow as mutable",
+        "E0308 — mismatched types",
+        "E0728 — `await` is only allowed inside `async` functions and blocks",
+        "No error — it's just a warning"
+      ],
+      "answer": 2,
+      "explain": "The compiler rejects .await outside async code with error E0728, since only async functions and blocks are compiled to support pausing and resuming."
+    },
+    {
+      "q": "What's the key behavioral difference between `.await` (waiting on I/O) and a blocking call like `std::thread::sleep`?",
+      "options": [
+        "There's no real difference — both freeze the thread the same way",
+        "`.await` yields control back so other work can run on the same thread while waiting; `std::thread::sleep` freezes the whole thread",
+        "`.await` always runs on a different CPU core automatically",
+        "`std::thread::sleep` is always faster"
+      ],
+      "answer": 1,
+      "explain": "When a future awaited via .await isn't ready, it returns control to the executor instead of the CPU sitting idle — other work can proceed. A real blocking call has no such courtesy."
+    },
+    {
+      "q": "What does Rust's standard library provide for async, and what is it missing?",
+      "options": [
+        "It provides both the async/.await syntax and a built-in executor",
+        "It provides the async/.await syntax and the Future trait, but ships no executor",
+        "It provides an executor, but no async/.await syntax",
+        "It provides neither — both come from an external crate"
+      ],
+      "answer": 1,
+      "explain": "async/.await and the Future trait are language/std features. Actually running a future to completion needs an executor/runtime, which Rust deliberately doesn't ship — you pick one, like Tokio."
+    },
+    {
+      "q": "You call an async fn but never `.await` or spawn the resulting value. What does the compiler tell you?",
+      "options": [
+        "`unused implementer of \\`Future\\` that must be used`",
+        "`unreachable code`",
+        "`this function is deprecated`",
+        "Nothing — no warning is produced"
+      ],
+      "answer": 0,
+      "explain": "The compiler's must_use lint on Future fires with 'unused implementer of Future that must be used', noting that futures do nothing unless you .await or poll them."
+    },
+    {
+      "q": "Why doesn't wrapping a purely CPU-bound loop (no I/O waiting at all) in `async` make it faster?",
+      "options": [
+        "Async always makes every program slower, period",
+        "Async's benefit comes from yielding control during I/O waits; with nothing to wait on, there's no gap to fill and only bookkeeping overhead is added",
+        "CPU-bound code cannot legally be written inside an async fn",
+        "async fn only works for functions that use the network"
+      ],
+      "answer": 1,
+      "explain": "Async concurrency comes from overlapping waiting time. A tight computation with no waiting gains nothing from being async and just carries the state-machine overhead."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does calling an `async fn` return?",
+      "back": "A `Future` — an inert value representing the work to be done. The function body has not run yet; nothing happens until the future is polled."
+    },
+    {
+      "front": "What does `.await` actually do?",
+      "back": "Drives a future forward by polling it. While it's waiting on something, it yields control back to whatever is running it instead of blocking the thread."
+    },
+    {
+      "front": "Where can `.await` legally appear?",
+      "back": "Only inside `async` code — an `async fn` body or an `async` block. Using it elsewhere is a compile error (E0728)."
+    },
+    {
+      "front": "What does Rust's standard library provide for async, and what does it deliberately NOT provide?",
+      "back": "It provides the `async`/`.await` syntax and the `Future` trait. It does NOT provide an executor — you need a runtime like Tokio to actually drive a future to completion."
+    },
+    {
+      "front": "What warning appears if you create a Future and never `.await` or spawn it?",
+      "back": "`unused implementer of \\`Future\\` that must be used` — futures do nothing unless you `.await` or poll them."
+    },
+    {
+      "front": "How does `.await` differ from `std::thread::sleep` while both are 'waiting'?",
+      "back": "`.await` yields the thread so other work can run while waiting; `std::thread::sleep` blocks the entire OS thread, so nothing else on it can run in the meantime."
+    },
+    {
+      "front": "Roughly what does the compiler turn an `async fn`'s body into?",
+      "back": "A state machine implementing the `Future` trait, with a `poll` method that returns `Poll::Ready(value)` once done or `Poll::Pending` when it needs to wait."
+    },
+    {
+      "front": "Why is async not automatically a speed boost for CPU-bound work?",
+      "back": "Async's win comes from yielding during I/O waits. A pure computation has nothing to yield during, so async adds overhead with no benefit — plain threads (or nothing) are usually better there."
+    }
+  ]
+}

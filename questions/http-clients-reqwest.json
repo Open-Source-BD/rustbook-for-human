@@ -1,0 +1,124 @@
+{
+  "topic": "http-clients-reqwest",
+  "title": "HTTP clients with reqwest",
+  "quiz": [
+    {
+      "q": "Why should you build a reqwest::Client once and reuse it, rather than creating one per request?",
+      "options": [
+        "It's required by the compiler",
+        "Client pools connections internally, so reusing it avoids repeating expensive connection setup",
+        "A new Client always fails to compile",
+        "It automatically retries failed requests"
+      ],
+      "answer": 1,
+      "explain": "Client keeps connections open/pooled internally; building a new one per request throws that pool away and repeats DNS/TLS setup costs."
+    },
+    {
+      "q": "What does `.send().await?` return for a request whose server responds 404 Not Found?",
+      "options": [
+        "Always an Err, because 404 means failure",
+        "Ok(Response) — a 404 is still a valid HTTP response as far as reqwest is concerned",
+        "It panics",
+        "None"
+      ],
+      "answer": 1,
+      "explain": "reqwest only treats network-level failures as Err from send(); a non-2xx status code is still a successful HTTP exchange until you check it."
+    },
+    {
+      "q": "How do you turn a non-2xx response into an Err you can propagate with `?`?",
+      "options": [
+        "Call `.unwrap()` on the response",
+        "Call `.error_for_status()` on the response",
+        "It happens automatically",
+        "Check `if response == 200`"
+      ],
+      "answer": 1,
+      "explain": "`.error_for_status()` converts a 4xx/5xx response into an Err(...) so `?` can bubble it up like any other failure."
+    },
+    {
+      "q": "What does `.json::<T>().await?` do?",
+      "options": [
+        "Prints the response as JSON",
+        "Reads the response body and deserializes it into your type T via serde",
+        "Converts T into JSON text",
+        "Validates that the URL is JSON-compatible"
+      ],
+      "answer": 1,
+      "explain": "`.json::<T>()` reads the body text and uses serde's Deserialize to build a T from it, returning a Result since parsing can fail."
+    },
+    {
+      "q": "Why should you set a timeout on your reqwest client or request?",
+      "options": [
+        "It's required for `.json()` to work",
+        "Without one, a slow or unresponsive server can make your request hang indefinitely",
+        "It makes requests faster",
+        "It's only needed for POST requests"
+      ],
+      "answer": 1,
+      "explain": "With no timeout, a request has no upper bound on how long it waits for a response — a stalled server can hang your program forever."
+    },
+    {
+      "q": "What's cheap about cloning a `reqwest::Client`?",
+      "options": [
+        "Nothing, cloning creates all-new connections",
+        "Client is internally an Arc, so cloning shares the same connection pool",
+        "Cloning a Client is not allowed",
+        "It resets the timeout"
+      ],
+      "answer": 1,
+      "explain": "reqwest::Client wraps its internals in an Arc, so .clone() just hands out another handle to the same pool rather than duplicating it."
+    },
+    {
+      "q": "In `client.get(url).send().await?.json::<Repo>().await?`, why might `.json::<Repo>()` fail even though `send()` succeeded?",
+      "options": [
+        "It never fails once send() succeeds",
+        "The response body might not match Repo's shape (e.g. it's an error JSON, not the expected struct)",
+        "json() always fails for GET requests",
+        "Only POST requests can be parsed as JSON"
+      ],
+      "answer": 1,
+      "explain": "A successful send() just means you got an HTTP response — if that response is an error body (e.g. 404 JSON), deserializing into your success struct fails on shape mismatch."
+    },
+    {
+      "q": "Which crate feature do you need on `reqwest` to use `.json()` for deserializing responses?",
+      "options": [
+        "\"blocking\"",
+        "\"json\"",
+        "\"cookies\"",
+        "No feature needed, it's built in unconditionally"
+      ],
+      "answer": 1,
+      "explain": "reqwest's JSON support (serializing/deserializing bodies) is gated behind the \"json\" feature: `cargo add reqwest --features json`."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Why build one reqwest::Client instead of one per request?",
+      "back": "A Client pools connections internally; reusing it avoids repeating DNS lookups and TLS handshakes on every call. A new Client per request throws that pooling away."
+    },
+    {
+      "front": "Does reqwest treat a 404 or 500 response as an Err automatically?",
+      "back": "No. .send().await only errors on network failures. A non-2xx status is still Ok(Response) until you check .status() or call .error_for_status()."
+    },
+    {
+      "front": "How do you convert a non-2xx response into a propagatable Err?",
+      "back": "Call .error_for_status() on the Response — it turns 4xx/5xx into an Err so `?` can bubble it up like any other failure."
+    },
+    {
+      "front": "What does .json::<T>().await do?",
+      "back": "Reads the response body and deserializes it into T via serde, returning a Result since the body might not match T's shape."
+    },
+    {
+      "front": "How do you set a timeout for reqwest requests?",
+      "back": "`reqwest::Client::builder().timeout(Duration::from_secs(10)).build()` — applies to every request made through that client (or set it per-request)."
+    },
+    {
+      "front": "Is reqwest::Client expensive to clone?",
+      "back": "No — it's an Arc internally, so .clone() shares the same connection pool rather than creating new connections."
+    },
+    {
+      "front": "What crates/features do you typically need for a reqwest + serde JSON setup?",
+      "back": "`reqwest` with feature \"json\", `serde` with feature \"derive\", and an async runtime like `tokio` with feature \"full\"."
+    }
+  ]
+}

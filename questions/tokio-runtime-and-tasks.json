@@ -1,0 +1,139 @@
+{
+  "topic": "tokio-runtime-and-tasks",
+  "title": "The Tokio runtime and tasks",
+  "quiz": [
+    {
+      "q": "What does `#[tokio::main]` do to `async fn main`?",
+      "options": [
+        "Nothing at runtime — it's just documentation",
+        "Rewrites `main` into an ordinary function that builds a Tokio runtime and blocks on your async body",
+        "Spawns `main`'s body on a background thread and returns immediately",
+        "Converts `main` into a `macro_rules!` macro"
+      ],
+      "answer": 1,
+      "explain": "The macro expands to a plain fn main that builds a Tokio runtime (e.g. Builder::new_multi_thread().build()) and calls .block_on(...) with your async body — that block_on is the executor driving your futures."
+    },
+    {
+      "q": "What does `tokio::spawn(future)` return?",
+      "options": [
+        "The future's result directly, synchronously",
+        "A `JoinHandle` you can `.await` later to get the task's result",
+        "Nothing — spawned tasks are always fire-and-forget",
+        "A brand new Tokio runtime"
+      ],
+      "answer": 1,
+      "explain": "tokio::spawn schedules the future to run concurrently and immediately hands back a JoinHandle. Awaiting the handle waits for the task and yields its return value."
+    },
+    {
+      "q": "Why must a task passed to `tokio::spawn` be `'static` and `Send`?",
+      "options": [
+        "It's an arbitrary limitation with no real reason",
+        "The task can be moved between worker threads and may outlive the function that spawned it, so it can't safely borrow local data or hold non-thread-safe types",
+        "Because Tokio can only ever run on a single OS thread",
+        "Because async functions are never allowed to capture variables"
+      ],
+      "answer": 1,
+      "explain": "Tokio's scheduler can migrate a task across worker threads at any .await point, and the task may run long after its spawning function returns — so it must fully own everything it touches, and that data must be thread-safe."
+    },
+    {
+      "q": "`tokio::spawn(async { println!(\"{name}\"); })` fails to compile with error E0373 because it borrows `name` from the enclosing function. What's the fix?",
+      "options": [
+        "Change `async` to `async move` so the task owns its own copy of `name`",
+        "Change `name`'s type from `String` to `&str`",
+        "Remove the `println!` call entirely",
+        "Wrap the whole block in `unsafe { }`"
+      ],
+      "answer": 0,
+      "explain": "async move captures name by value instead of by reference, so the spawned task no longer depends on the spawning function's stack frame — satisfying the 'static requirement."
+    },
+    {
+      "q": "What does `tokio::join!(a, b)` do?",
+      "options": [
+        "Runs `a`, then runs `b` after `a` finishes",
+        "Runs `a` and `b` concurrently and returns once BOTH have finished",
+        "Runs whichever of `a` or `b` finishes first and drops the other",
+        "Spawns `a` and `b` onto independent OS threads with no coordination between them"
+      ],
+      "answer": 1,
+      "explain": "join! drives all its futures concurrently on the same task and only completes once every one of them is done, returning a tuple of their results."
+    },
+    {
+      "q": "In `tokio::select! { a => ..., b => ... }`, what happens to the branch that does NOT finish first?",
+      "options": [
+        "It keeps running in the background until it eventually finishes",
+        "It is dropped/cancelled immediately once the other branch wins",
+        "It causes a compile error",
+        "It automatically retries from the start"
+      ],
+      "answer": 1,
+      "explain": "select! polls all branches concurrently; the instant one completes, its arm runs and every other branch is dropped mid-flight — it is not resumed or finished later."
+    },
+    {
+      "q": "Why does calling `std::thread::sleep` inside an async task cause a real performance problem, even though the code compiles fine?",
+      "options": [
+        "It doesn't actually cause any problem",
+        "It freezes the entire OS worker thread it's running on, so every other task scheduled on that same thread is stalled until it returns",
+        "It only slows down the task that called it and nothing else",
+        "It silently crashes the whole program"
+      ],
+      "answer": 1,
+      "explain": "std::thread::sleep never yields — it blocks the worker thread outright. On a runtime with limited worker threads, that stalls every other task sharing that thread, not just the caller."
+    },
+    {
+      "q": "What's the right tool for running real blocking or CPU-heavy work inside an async program without stalling other tasks?",
+      "options": [
+        "`tokio::join!`",
+        "`tokio::select!`",
+        "`tokio::task::spawn_blocking`",
+        "Just calling it directly inside the `async fn`"
+      ],
+      "answer": 2,
+      "explain": "spawn_blocking moves the closure onto a separate thread pool dedicated to blocking work, so it never occupies (and stalls) the async worker threads."
+    },
+    {
+      "q": "Which of these is a telltale sign that async code has no runtime actually driving it?",
+      "options": [
+        "The program compiles and runs exactly as expected",
+        "A compile error about needing async context, or a runtime panic like 'there is no reactor running'",
+        "The program runs noticeably faster than a synchronous version",
+        "Nothing different happens at all — it's indistinguishable"
+      ],
+      "answer": 1,
+      "explain": "Missing #[tokio::main]/the tokio dependency shows up either as a compile-time error (.await needs async context) or, if you tried to drive a future manually without a reactor, a runtime panic complaining no runtime/reactor is running."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does `#[tokio::main]` do?",
+      "back": "Rewrites `async fn main` into an ordinary `fn main` that builds a Tokio runtime (roughly `Builder::new_multi_thread().enable_all().build()`) and blocks on your async body with `.block_on(...)`."
+    },
+    {
+      "front": "What does `tokio::spawn` do, and what does it return?",
+      "back": "Schedules a future to run concurrently on Tokio's worker pool. Returns a `JoinHandle` you can `.await` to get the task's result."
+    },
+    {
+      "front": "What two bounds must a spawned future satisfy, and why?",
+      "back": "`'static` (owns everything it touches) and `Send` (safe to move across threads) — because the task can migrate between worker threads and may outlive the function that spawned it."
+    },
+    {
+      "front": "How do you fix `tokio::spawn(async { ... })` erroring E0373 because it borrows a local?",
+      "back": "Add `move`: `tokio::spawn(async move { ... })`, so the task owns a copy of the data instead of borrowing it."
+    },
+    {
+      "front": "`tokio::join!` vs `tokio::select!` — what's the core difference?",
+      "back": "`join!` runs all its futures concurrently and waits for ALL of them to finish. `select!` races them and proceeds with whichever finishes FIRST, cancelling the rest."
+    },
+    {
+      "front": "Why does `std::thread::sleep` inside an async task hurt performance?",
+      "back": "It blocks the entire OS worker thread it runs on — every other task scheduled on that thread stalls until the sleep call returns. Use `tokio::time::sleep` instead."
+    },
+    {
+      "front": "What should you use for real blocking or CPU-heavy work inside an async program?",
+      "back": "`tokio::task::spawn_blocking` — it moves the work onto a separate thread pool so it doesn't stall the async worker threads."
+    },
+    {
+      "front": "What error appears when `tokio::spawn`'s future borrows a non-`'static` local?",
+      "back": "E0373: \"async block may outlive the current function, but it borrows `x`, which is owned by the current function.\" Fix with `async move`."
+    }
+  ]
+}

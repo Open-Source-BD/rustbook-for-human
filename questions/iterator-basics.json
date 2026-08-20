@@ -1,0 +1,113 @@
+{
+  "topic": "iterator-basics",
+  "title": "Iterator basics",
+  "quiz": [
+    {
+      "q": "What does calling `.next()` return once an iterator is exhausted?",
+      "options": ["None", "an empty Vec", "a panic", "0"],
+      "answer": 0,
+      "explain": "`next()` returns `Option<Item>` — `Some(item)` while there's more, and `None` once the iterator has nothing left to give."
+    },
+    {
+      "q": "What does `.iter()` yield when called on a `Vec<T>`?",
+      "options": ["T (owned)", "&T (borrowed)", "&mut T (mutable borrow)", "Option<T>"],
+      "answer": 1,
+      "explain": "`.iter()` hands out read-only references, `&T`, so the original collection is untouched and still usable afterward."
+    },
+    {
+      "q": "What happens to the original collection after you call `.into_iter()` on it and loop over the result?",
+      "options": [
+        "It's left untouched",
+        "It's borrowed immutably",
+        "It's consumed — the original can no longer be used",
+        "It's cleared but stays usable"
+      ],
+      "answer": 2,
+      "explain": "`.into_iter()` yields owned items, which means it takes ownership of the collection itself. Once consumed, the original variable is gone."
+    },
+    {
+      "q": "Which method lets you modify every element of a `Vec` in place?",
+      "options": [".iter()", ".into_iter()", ".iter_mut()", ".collect()"],
+      "answer": 2,
+      "explain": "`.iter_mut()` yields `&mut T` — mutable references you can write through (with `*item = ...`) to change elements without consuming the collection."
+    },
+    {
+      "q": "`for x in &v` desugars to roughly which call?",
+      "options": [
+        "v.into_iter(), consuming v",
+        "v.iter(), borrowing each element",
+        "v.iter_mut()",
+        "v.clone().into_iter()"
+      ],
+      "answer": 1,
+      "explain": "Looping over `&v` borrows rather than owns — under the hood it's equivalent to calling `.iter()`, so `v` is still usable after the loop."
+    },
+    {
+      "q": "What happens if you write `nums.iter().map(|n| n * 2);` with no consumer at the end?",
+      "options": [
+        "It runs immediately and discards the result",
+        "Nothing happens — the compiler warns the iterator is unused",
+        "It's a hard compile error",
+        "It multiplies nums in place"
+      ],
+      "answer": 1,
+      "explain": "Adaptors are lazy. Without a consumer like `.collect()`, `.sum()`, or a `for` loop, the chain never runs — Rust warns \"unused iterator that must be used.\""
+    },
+    {
+      "q": "Why must an iterator variable be declared `mut` to call `.next()` on it directly?",
+      "options": [
+        "It doesn't need to be — that's a myth",
+        "next() takes &mut self, so it needs mutable access to advance internal state",
+        "Rust requires all loop variables to be mutable",
+        "next() reallocates memory on every call"
+      ],
+      "answer": 1,
+      "explain": "`fn next(&mut self) -> Option<Self::Item>` needs a mutable reference to the iterator so it can update wherever it tracks its position."
+    },
+    {
+      "q": "You need to print every name in a Vec<String> and then still use the Vec afterward. Which loop form is correct?",
+      "options": [
+        "for name in names",
+        "for name in &names",
+        "for name in names.into_iter()",
+        "Both A and C work equally well"
+      ],
+      "answer": 1,
+      "explain": "`for name in names` (and its explicit form `names.into_iter()`) consumes the vector. `for name in &names` only borrows, so `names` is still valid afterward."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What do .iter(), .iter_mut(), and .into_iter() each yield from a Vec<T>?",
+      "back": ".iter() -> &T (borrow), .iter_mut() -> &mut T (mutable borrow), .into_iter() -> T (owned, consumes the vector)."
+    },
+    {
+      "front": "What does the Iterator trait's core method look like?",
+      "back": "fn next(&mut self) -> Option<Self::Item> — returns Some(item) while there's more, None when exhausted."
+    },
+    {
+      "front": "What does `for x in v` desugar to?",
+      "back": "Roughly: `let mut it = v.into_iter(); while let Some(x) = it.next() { ... }` — it takes ownership of v."
+    },
+    {
+      "front": "What does `for x in &v` desugar to?",
+      "back": "Roughly: `let mut it = v.iter(); while let Some(x) = it.next() { ... }` — it borrows v, which stays usable afterward."
+    },
+    {
+      "front": "Is an iterator chain like `v.iter().map(...)` eager or lazy?",
+      "back": "Lazy — it builds a plan but does no work until something consumes it (a for loop, .collect(), .next(), etc.)."
+    },
+    {
+      "front": "Why must an iterator variable be `mut` to call .next() on it directly?",
+      "back": "next(&mut self) needs a mutable reference to advance the iterator's internal position."
+    },
+    {
+      "front": "You need to double every element of a Vec<i32> in place. Which method?",
+      "back": "iter_mut() — it yields &mut T so you can mutate through the reference, e.g. `for n in v.iter_mut() { *n *= 2; }`."
+    },
+    {
+      "front": "After `for x in names` where names: Vec<String>, can you still use `names`?",
+      "back": "No — for x in names calls into_iter(), which consumes names. Use `for x in &names` if you need it afterward."
+    }
+  ]
+}

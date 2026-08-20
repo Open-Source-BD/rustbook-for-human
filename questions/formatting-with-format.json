@@ -1,0 +1,118 @@
+{
+  "topic": "formatting-with-format",
+  "title": "Formatting with format!",
+  "quiz": [
+    {
+      "q": "Which macro returns a String instead of printing anything?",
+      "options": ["println!", "format!", "eprintln!", "write!"],
+      "answer": 1,
+      "explain": "format! builds and returns a String; the print macros write directly to stdout or stderr."
+    },
+    {
+      "q": "What's the difference between `{}` and `{:?}` in a format string?",
+      "options": [
+        "{} uses Display, {:?} uses Debug",
+        "{} uses Debug, {:?} uses Display",
+        "They're identical",
+        "{:?} only works on numbers"
+      ],
+      "answer": 0,
+      "explain": "{} calls the Display trait (user-facing text); {:?} calls Debug (developer-facing, usually derived)."
+    },
+    {
+      "q": "Why does `{p:?}` fail to compile if `Point` has no `#[derive(Debug)]`?",
+      "options": [
+        "It doesn't fail — it just prints nothing",
+        "{:?} requires the Debug trait, which the compiler checks at compile time",
+        "Debug requires unsafe code",
+        "Only tuples support {:?}"
+      ],
+      "answer": 1,
+      "explain": "{:?} is a real trait bound (Debug). Without an implementation the code fails to compile — it never silently prints blank."
+    },
+    {
+      "q": "What does `println!(\"{n:03}\")` print for `n = 7`?",
+      "options": ["7", "007", "7.00", "  7"],
+      "answer": 1,
+      "explain": "`03` means zero-padded to a minimum width of 3, giving \"007\"."
+    },
+    {
+      "q": "What does precision (`.N`) mean when applied to a string argument, e.g. `{s:.5}`?",
+      "options": [
+        "Round to 5 decimal places",
+        "Truncate the string to at most 5 characters",
+        "Repeat the string 5 times",
+        "Pad the string to width 5"
+      ],
+      "answer": 1,
+      "explain": "For strings, precision means \"maximum length\" — the string is truncated to that many characters."
+    },
+    {
+      "q": "Why does `println!(\"{p.score}\")` fail to compile?",
+      "options": [
+        "Field access isn't allowed anywhere in println!",
+        "Captured identifiers in format strings must be plain variable names, not expressions like field access",
+        "p.score isn't valid Rust syntax",
+        "println! only accepts numeric literals"
+      ],
+      "answer": 1,
+      "explain": "Implicit argument capture only works for a bare identifier already in scope; field access must be passed as a normal argument, e.g. `println!(\"{}\", p.score)`."
+    },
+    {
+      "q": "What must you do with the Result returned by `write!(buf, \"...\")`?",
+      "options": [
+        "Nothing — it's always Ok",
+        "Handle it (e.g. .unwrap() or ?) — Rust warns on an unused Result",
+        "Only handle it when writing to a file, not a String",
+        "Call .flush() on it first"
+      ],
+      "answer": 1,
+      "explain": "write!/writeln! return a Result because the write can fail; leaving it unhandled triggers an \"unused Result that must be used\" warning."
+    },
+    {
+      "q": "When are format string arguments (like `{name}` or `{0}`) checked for correctness?",
+      "options": [
+        "At runtime, the first time the line executes",
+        "At compile time, as part of expanding the macro",
+        "Never — invalid references are silently ignored",
+        "Only in debug builds"
+      ],
+      "answer": 1,
+      "explain": "format!/println! expand and validate the format string at compile time, so a typo or missing argument is a build error, not a runtime surprise."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What's the difference between println! and format!?",
+      "back": "println! prints to stdout with a trailing newline; format! builds and returns a String without printing."
+    },
+    {
+      "front": "Which macro prints to stderr instead of stdout?",
+      "back": "eprintln! (and eprint! without the trailing newline)."
+    },
+    {
+      "front": "What trait does {} use? What about {:?}?",
+      "back": "{} uses Display (user-facing); {:?} uses Debug (developer-facing, usually derived)."
+    },
+    {
+      "front": "What does {:#?} do differently from {:?}?",
+      "back": "It pretty-prints the Debug output across multiple indented lines instead of one line."
+    },
+    {
+      "front": "What does the format spec `{value:>8.2}` mean?",
+      "back": "Right-align (>), minimum width 8, 2 digits of precision (decimal places for a float)."
+    },
+    {
+      "front": "Can you capture a field access like {player.score} directly in a format string?",
+      "back": "No — only plain variable names can be captured; expressions must be passed as a regular argument."
+    },
+    {
+      "front": "What's required to implement Display for a custom type?",
+      "back": "`impl fmt::Display for T { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, ...) } }`"
+    },
+    {
+      "front": "When are format string errors caught?",
+      "back": "At compile time — invalid syntax or a missing argument fails the build."
+    }
+  ]
+}

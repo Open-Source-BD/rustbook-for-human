@@ -1,0 +1,139 @@
+{
+  "topic": "lifetime-elision-and-static",
+  "title": "Lifetime elision and 'static",
+  "quiz": [
+    {
+      "q": "What does elision rule 1 say?",
+      "options": [
+        "Every function needs an explicit lifetime",
+        "Each elided input reference gets its own distinct lifetime",
+        "All references share one lifetime by default",
+        "Only the first argument gets a lifetime"
+      ],
+      "answer": 1,
+      "explain": "Rule 1: every elided (unwritten) lifetime among the input references is treated as its own distinct lifetime parameter."
+    },
+    {
+      "q": "Under elision rule 2, when is the single input lifetime assigned to the output?",
+      "options": [
+        "Never automatically",
+        "When there's exactly one input lifetime",
+        "When there are exactly two input lifetimes",
+        "Only for methods"
+      ],
+      "answer": 1,
+      "explain": "Rule 2: if there is exactly one input lifetime (elided or explicit), it's assigned to every elided output lifetime."
+    },
+    {
+      "q": "Under elision rule 3, whose lifetime is assigned to elided outputs?",
+      "options": [
+        "The first parameter's, always",
+        "&self's (or &mut self's) lifetime, when the function is a method",
+        "The return type's own lifetime",
+        "There is no rule 3"
+      ],
+      "answer": 1,
+      "explain": "Rule 3: if one of the inputs is &self or &mut self, that lifetime is assigned to all elided output lifetimes — this is why most getter methods need no annotation."
+    },
+    {
+      "q": "Why does `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str` need an explicit lifetime?",
+      "options": [
+        "It doesn't — elision would infer it automatically",
+        "There are two input lifetimes and no &self, so neither rule 2 nor rule 3 applies",
+        "Only functions named 'longest' need lifetimes",
+        "String slices always require explicit lifetimes"
+      ],
+      "answer": 1,
+      "explain": "With two distinct input references and no &self parameter, none of the three elision rules produce a unique answer, so the compiler requires an explicit annotation."
+    },
+    {
+      "q": "Why does `struct Excerpt { text: &str }` fail to compile?",
+      "options": [
+        "Structs can't hold references at all",
+        "A struct holding a reference needs a lifetime parameter so the compiler knows how long the struct itself can live",
+        "str must always be owned, not borrowed",
+        "Only tuple structs can hold references"
+      ],
+      "answer": 1,
+      "explain": "The compiler needs a named lifetime parameter (e.g. Excerpt<'a>) to tie the struct's own validity to the reference it stores."
+    },
+    {
+      "q": "Why does a string literal like \"hello\" have type &'static str?",
+      "options": [
+        "Because all strings default to 'static",
+        "Because it's embedded directly in the compiled binary and is never freed during the program's run",
+        "Because the compiler heap-allocates it once at startup",
+        "It doesn't — string literals have no lifetime"
+      ],
+      "answer": 1,
+      "explain": "String literals are baked into the binary at compile time, so they're valid for the entire run of the program — hence 'static."
+    },
+    {
+      "q": "What does a `T: 'static` trait bound actually require?",
+      "options": [
+        "That every value of T is a compile-time constant",
+        "That T contains no references with a lifetime shorter than 'static — i.e. it owns its data or only borrows 'static data",
+        "That T must be declared at the top level of the program",
+        "That T implements Copy"
+      ],
+      "answer": 1,
+      "explain": "T: 'static means T doesn't contain any non-'static borrows; an ordinary owned value like a local String satisfies it trivially, even though the variable itself is short-lived."
+    },
+    {
+      "q": "In `fn print_it<T: Debug + 'static>(value: T)`, why does passing an owned `String` compile fine even though the variable is a short-lived local?",
+      "options": [
+        "It doesn't compile — Strings can never satisfy 'static",
+        "The String owns its data outright, so it has no borrows that could expire early, satisfying 'static regardless of the variable's own scope",
+        "The String is secretly treated as a string literal",
+        "'static only applies to references, never to this kind of bound"
+      ],
+      "answer": 1,
+      "explain": "'static as a bound is about what a type borrows, not how long the variable lives — an owned String has nothing to expire, so it satisfies T: 'static."
+    },
+    {
+      "q": "Why is reaching for `'static` to fix a lifetime error usually the wrong move?",
+      "options": [
+        "It's literally impossible to compile",
+        "It usually just relocates the bug — now a borrowed value can't be passed in at all where 'static is required",
+        "'static bounds were removed in newer Rust editions",
+        "It always makes the program slower at runtime"
+      ],
+      "answer": 1,
+      "explain": "Forcing a 'static bound doesn't fix the underlying ownership issue; it often just makes it impossible to pass in the borrowed value you actually had, pushing you toward cloning or restructuring ownership instead."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "State elision rule 1.",
+      "back": "Each elided input reference gets its own distinct lifetime parameter."
+    },
+    {
+      "front": "State elision rule 2.",
+      "back": "If there's exactly one input lifetime, it's assigned to every elided output lifetime."
+    },
+    {
+      "front": "State elision rule 3.",
+      "back": "If one input is &self/&mut self, its lifetime is assigned to every elided output lifetime."
+    },
+    {
+      "front": "When do you need to write an explicit lifetime by hand?",
+      "back": "When none of the three elision rules produce a single answer — typically two or more distinct input references with no &self."
+    },
+    {
+      "front": "Why does a struct holding a reference need a lifetime parameter?",
+      "back": "So the compiler can tie the struct's own validity to the lifetime of the data it borrows, preventing the struct from outliving that data."
+    },
+    {
+      "front": "Why are string literals &'static?",
+      "back": "They're embedded directly in the compiled binary, so they're valid for the entire program run."
+    },
+    {
+      "front": "What does a `T: 'static` bound actually mean?",
+      "back": "T contains no references shorter-lived than 'static — it either owns its data or only borrows 'static data. It does not mean the value itself is global."
+    },
+    {
+      "front": "Does an ordinary local `String` satisfy a `T: 'static` bound?",
+      "back": "Yes — it owns its data outright, so it has nothing to expire early, even though the variable itself has a normal, short scope."
+    }
+  ]
+}

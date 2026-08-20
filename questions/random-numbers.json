@@ -1,0 +1,119 @@
+{
+  "topic": "random-numbers",
+  "title": "Random numbers",
+  "quiz": [
+    {
+      "q": "Does Rust's standard library include a random number generator?",
+      "options": [
+        "Yes, std::random",
+        "No — the rand crate is the ecosystem standard",
+        "Yes, but only for integers, not floats",
+        "Only on the nightly compiler"
+      ],
+      "answer": 1,
+      "explain": "Generating good randomness is its own algorithmic problem, so it lives in the rand crate rather than std."
+    },
+    {
+      "q": "What does `..=` do in `rng.random_range(1..=6)`?",
+      "options": [
+        "It's required syntax with no special meaning",
+        "It makes the range inclusive, so 6 is actually a possible result (like a real die)",
+        "It marks the range as 'random' to the compiler",
+        "It excludes the first value from being generated"
+      ],
+      "answer": 1,
+      "explain": "A plain 1..6 would only ever produce 1 through 5. The inclusive ..= is what makes 6 reachable."
+    },
+    {
+      "q": "Why does calling `.choose()` on a slice fail with 'no method named `choose` found' if you've only written `use rand::Rng;`?",
+      "options": [
+        "choose() doesn't exist anywhere in the rand crate",
+        ".choose() lives on the rand::seq::SliceRandom trait, which must be imported separately",
+        "You must call rand::rng() before importing anything",
+        "Slices in Rust can never be randomized"
+      ],
+      "answer": 1,
+      "explain": "Rng and SliceRandom are two different traits for two different jobs — generating numbers vs. doing something random with a collection."
+    },
+    {
+      "q": "What does `slice.choose(&mut rng)` return?",
+      "options": [
+        "T, by value",
+        "&T directly, panicking if the slice is empty",
+        "Option<&T> — None if the slice is empty",
+        "Result<&T, Error>"
+      ],
+      "answer": 2,
+      "explain": "It returns an Option because an empty slice genuinely has nothing to pick — you must handle the None case."
+    },
+    {
+      "q": "Why would you use `StdRng::seed_from_u64(42)` instead of `rand::rng()`?",
+      "options": [
+        "It's faster to generate numbers with",
+        "It's the only RNG type that supports random_range",
+        "It produces the exact same sequence every run — useful for tests and simulations",
+        "It's required before you can call .shuffle()"
+      ],
+      "answer": 2,
+      "explain": "A seeded RNG is fully reproducible, which is exactly what you want when a test or simulation needs to be deterministic."
+    },
+    {
+      "q": "Which trait must be in scope to call `.shuffle()` on a `Vec`?",
+      "options": ["rand::Rng", "rand::seq::SliceRandom", "std::cmp::Ord", "serde::Serialize"],
+      "answer": 1,
+      "explain": "shuffle() and choose() both live on SliceRandom, a trait separate from Rng."
+    },
+    {
+      "q": "Why shouldn't you assume the default `rand::rng()` is safe for generating security tokens?",
+      "options": [
+        "It's too slow for that kind of use case",
+        "Its default algorithm is built for speed and statistical quality, not guaranteed unpredictability against an attacker",
+        "It can only generate numbers between 0 and 100",
+        "rand doesn't support any security-related use case, period"
+      ],
+      "answer": 1,
+      "explain": "Statistical randomness and cryptographic unpredictability are different properties — check rand's docs before using it for tokens or secrets."
+    },
+    {
+      "q": "What risk does a test built directly on `rand::rng()` (the default thread RNG) carry?",
+      "options": [
+        "It will fail to compile inside a #[test] function",
+        "Flaky results, since different runs can draw different random values",
+        "It always runs noticeably slower than other tests",
+        "It can never be used alongside assert! macros"
+      ],
+      "answer": 1,
+      "explain": "The default RNG is intentionally unpredictable — great for real use, bad for a test that needs to behave the same way every run."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Does std have a random number generator?",
+      "back": "No — the rand crate is the ecosystem standard."
+    },
+    {
+      "front": "How do you get a random number from 1 to 6, inclusive?",
+      "back": "rng.random_range(1..=6) — the ..= makes the range inclusive so 6 is actually reachable."
+    },
+    {
+      "front": "What trait do .choose() and .shuffle() require in scope?",
+      "back": "rand::seq::SliceRandom — without importing it, those methods don't exist on a slice."
+    },
+    {
+      "front": "What does slice.choose(&mut rng) return, and why?",
+      "back": "Option<&T> — None when the slice is empty, since there's nothing to pick."
+    },
+    {
+      "front": "How do you get a reproducible sequence of 'random' numbers?",
+      "back": "Seed a specific generator, e.g. StdRng::seed_from_u64(42), instead of using the default rand::rng()."
+    },
+    {
+      "front": "Is the default rand::rng() safe for generating security tokens?",
+      "back": "Not guaranteed — check rand's docs for a CSPRNG before using randomness for tokens, session ids, or secrets."
+    },
+    {
+      "front": "Why seed an RNG inside a test?",
+      "back": "So the test's random input is identical every run, avoiding flakiness from whatever values the default RNG happened to draw."
+    }
+  ]
+}

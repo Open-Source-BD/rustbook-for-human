@@ -1,0 +1,124 @@
+{
+  "topic": "databases-and-sqlx",
+  "title": "Databases with sqlx",
+  "quiz": [
+    {
+      "q": "What's the key difference between sqlx and a traditional ORM?",
+      "options": [
+        "sqlx only supports SQLite",
+        "sqlx has you write real SQL, which it checks against your schema, instead of hiding SQL behind method chains",
+        "sqlx doesn't support async",
+        "ORMs are always faster"
+      ],
+      "answer": 1,
+      "explain": "Unlike ORMs that build queries from method calls, sqlx has you write actual SQL strings and verifies them against your real database."
+    },
+    {
+      "q": "What do sqlx's `query!`/`query_as!` macros check, and when?",
+      "options": [
+        "Nothing — they're identical to query()/query_as()",
+        "They connect to a live database (or offline cache) at compile time to verify SQL and infer result types",
+        "They check your SQL at runtime only, like `query()`",
+        "They validate your Cargo.toml"
+      ],
+      "answer": 1,
+      "explain": "The macro versions connect to a real database (via DATABASE_URL) or a saved .sqlx cache during `cargo build`, catching typos and type mismatches as compile errors."
+    },
+    {
+      "q": "Why create one PgPool at startup instead of connecting per query?",
+      "options": [
+        "PgPool doesn't support reconnecting",
+        "Opening a connection is expensive, and per-query connections can exhaust the database's connection limit under load",
+        "It's required by the Rust compiler",
+        "PgPool can only be created once per program by design"
+      ],
+      "answer": 1,
+      "explain": "Each new connection costs a TCP handshake and auth round trip; sharing a pool avoids repeating that cost and avoids exhausting the database's max connections."
+    },
+    {
+      "q": "What is the purpose of `$1` in a sqlx query string?",
+      "options": [
+        "It's a comment marker",
+        "A bound parameter placeholder — the value is sent to the database separately from the SQL text via .bind()",
+        "It denotes the first row returned",
+        "It's Postgres syntax for a wildcard"
+      ],
+      "answer": 1,
+      "explain": "`$1`, `$2`, ... are placeholders filled in via .bind(value); the driver sends the query text and values as separate pieces, which is what prevents SQL injection."
+    },
+    {
+      "q": "What's wrong with `format!(\"SELECT * FROM users WHERE name = '{}'\", name)` used as a query?",
+      "options": [
+        "Nothing, it's a normal way to build SQL",
+        "It's a SQL injection vulnerability — untrusted input becomes part of the SQL syntax itself",
+        "format! doesn't work with SQL strings",
+        "It's slower than using query!"
+      ],
+      "answer": 1,
+      "explain": "Formatting user input directly into SQL text lets that input escape the intended string and rewrite the query's logic — the classic SQL injection hole that bound parameters prevent."
+    },
+    {
+      "q": "Is `PgPool` expensive to `.clone()`?",
+      "options": [
+        "Yes, cloning opens a whole new set of connections",
+        "No, PgPool is a handle to the shared pool — cloning it doesn't open new connections",
+        "PgPool cannot be cloned",
+        "Cloning it closes the original pool"
+      ],
+      "answer": 1,
+      "explain": "Cloning PgPool just hands out another reference to the same underlying pool of connections, not a new pool."
+    },
+    {
+      "q": "Why might a CI build using sqlx's `query!` macro fail with a \"DATABASE_URL not set\" error even though the SQL is correct?",
+      "options": [
+        "query! always requires general internet access",
+        "query!/query_as! need a live database (or offline cache) available at compile time to verify the SQL, and CI often forgets to provide one",
+        "The SQL syntax must be wrong",
+        "CI never supports sqlx"
+      ],
+      "answer": 1,
+      "explain": "The compile-time-checked macros need to reach a real database or a saved .sqlx offline cache while building — a CI pipeline that skips this setup fails even on correct SQL."
+    },
+    {
+      "q": "What does `#[derive(sqlx::FromRow)]` on a struct do?",
+      "options": [
+        "Marks the struct as unsafe",
+        "Lets sqlx map a database row's columns onto the struct's fields automatically",
+        "Converts the struct into SQL DDL",
+        "Adds a primary key to the struct"
+      ],
+      "answer": 1,
+      "explain": "FromRow generates the code that reads a returned row's columns into the struct's fields, used by functions like query_as::<_, User>(...)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Is sqlx an ORM?",
+      "back": "No — sqlx is an async SQL toolkit. You write real SQL strings yourself; sqlx checks them against your schema instead of generating queries from method calls."
+    },
+    {
+      "front": "What do query!/query_as! check at compile time?",
+      "back": "They connect to a live database (via DATABASE_URL) or a saved offline cache to verify the SQL is valid and infer the result's column types."
+    },
+    {
+      "front": "Where should a PgPool be created?",
+      "back": "Once, at application startup — then shared (via reference or Arc) across the whole app, instead of opening a new connection per query."
+    },
+    {
+      "front": "What does $1 mean in a sqlx query?",
+      "back": "A bound parameter placeholder. The value is passed via .bind(...) and sent to the database separately from the SQL text — this is what prevents SQL injection."
+    },
+    {
+      "front": "Why is format!()-ing values into SQL dangerous?",
+      "back": "It lets untrusted input become part of the SQL syntax itself (SQL injection) — e.g. a value like `' OR '1'='1` can rewrite the query's logic."
+    },
+    {
+      "front": "Is PgPool cheap to clone?",
+      "back": "Yes — cloning it shares a handle to the same pool of connections rather than opening new ones."
+    },
+    {
+      "front": "What's a common CI pitfall with sqlx's compile-time-checked macros?",
+      "back": "They need a live database or a saved .sqlx offline cache reachable during `cargo build` — CI setups that skip this fail to build even with correct SQL."
+    }
+  ]
+}

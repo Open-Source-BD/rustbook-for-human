@@ -1,0 +1,118 @@
+{
+  "topic": "type-conversion-and-casting",
+  "title": "Type conversion and casting",
+  "quiz": [
+    {
+      "q": "What does `300i64 as u8` produce, and why?",
+      "options": [
+        "Compile error: value out of range",
+        "44, because only the low 8 bits of 300 are kept",
+        "255, because it saturates",
+        "300, unchanged"
+      ],
+      "answer": 1,
+      "explain": "`as` between integer types keeps only the bits that fit. 300's low 8 bits equal 44 — no error, no saturation for integer-to-integer casts."
+    },
+    {
+      "q": "What does `-1i32 as u8` evaluate to?",
+      "options": ["0", "-1", "255", "Compile error"],
+      "answer": 2,
+      "explain": "`as` reinterprets the bit pattern rather than clamping. -1i32 is all 1-bits; keeping the low 8 bits as u8 gives 255."
+    },
+    {
+      "q": "How does `as` handle a float that's way out of an integer type's range, e.g. `1e20_f64 as i32`?",
+      "options": [
+        "Panics at runtime",
+        "Produces undefined behavior",
+        "Saturates to the target type's MAX or MIN",
+        "Wraps around like integer-to-integer casts"
+      ],
+      "answer": 2,
+      "explain": "Since Rust 1.45, float-to-int `as` casts saturate to the target type's min/max instead of producing UB or garbage."
+    },
+    {
+      "q": "Why does implementing `From<Feet> for Meters` also give you `Feet: Into<Meters>`?",
+      "options": [
+        "It doesn't — you must implement both traits separately",
+        "std provides a blanket impl: any T with `From<T> for U` also gets `Into<U>` for T",
+        "Into is a supertrait of From",
+        "Rust auto-generates Into via a derive macro"
+      ],
+      "answer": 1,
+      "explain": "The standard library defines `impl<T, U> Into<U> for T where U: From<T>`, so writing `From` automatically gives you `Into` too."
+    },
+    {
+      "q": "When should you reach for `TryFrom`/`TryInto` instead of `From`/`Into`?",
+      "options": [
+        "When the conversion always succeeds",
+        "When the conversion can fail and you want a Result instead of silent truncation",
+        "When converting between two enums specifically",
+        "TryFrom is deprecated — never use it"
+      ],
+      "answer": 1,
+      "explain": "TryFrom/TryInto return `Result<T, E>`, letting you catch and handle out-of-range or invalid conversions explicitly instead of truncating them."
+    },
+    {
+      "q": "What trait powers `\"42\".parse::<i32>()`?",
+      "options": ["Into", "Parse", "FromStr", "TryInto"],
+      "answer": 2,
+      "explain": "`.parse()` calls `FromStr::from_str` for the target type, returning a `Result<T, T::Err>`."
+    },
+    {
+      "q": "What does `70_000i64 as i16` produce?",
+      "options": [
+        "A compile error, because 70000 doesn't fit in i16",
+        "4464 — the low 16 bits of 70000 reinterpreted as i16",
+        "i16::MAX, because it saturates",
+        "0, because it overflows to zero"
+      ],
+      "answer": 1,
+      "explain": "Integer-to-integer `as` casts truncate to the low bits rather than saturating (unlike float-to-int casts); 70000's low 16 bits form 4464 as a signed i16."
+    },
+    {
+      "q": "`fn to_byte(n: i32) -> u8 { u8::try_from(n) }` fails to compile. Why?",
+      "options": [
+        "u8::try_from doesn't exist",
+        "try_from returns a Result<u8, _>, which doesn't match the declared return type u8",
+        "n must be declared as unsigned first",
+        "try_from requires an explicit turbofish"
+      ],
+      "answer": 1,
+      "explain": "`TryFrom::try_from` always returns a Result. The function must either return that Result type or unwrap/match it before returning a bare u8."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does `as` never do when casting between numeric types?",
+      "back": "It never panics and never checks that the value fits — it silently truncates or reinterprets bits."
+    },
+    {
+      "front": "Widening vs narrowing integer casts — what's the difference?",
+      "back": "Widening (small type → big type) always preserves the value; narrowing (big type → small type) keeps only the low bits and can change the value."
+    },
+    {
+      "front": "How do float-to-int `as` casts handle out-of-range values?",
+      "back": "They saturate to the target type's MIN/MAX instead of wrapping or producing undefined behavior (since Rust 1.45)."
+    },
+    {
+      "front": "What's the relationship between From and Into?",
+      "back": "Implementing `From<T> for U` automatically gives you `Into<U>` for T, via a blanket impl in std."
+    },
+    {
+      "front": "When should you implement From vs TryFrom?",
+      "back": "From is for conversions that always succeed; TryFrom is for conversions that can fail, and returns a Result."
+    },
+    {
+      "front": "What trait does `.parse()` use under the hood?",
+      "back": "FromStr — `.parse::<T>()` calls `T::from_str`, returning `Result<T, T::Err>`."
+    },
+    {
+      "front": "Does `-1i32 as u8` panic?",
+      "back": "No — `as` never panics. It reinterprets the bit pattern, producing 255."
+    },
+    {
+      "front": "Why prefer TryFrom over `as` for a risky conversion?",
+      "back": "TryFrom catches out-of-range input as an explicit Err instead of silently truncating or wrapping it."
+    }
+  ]
+}

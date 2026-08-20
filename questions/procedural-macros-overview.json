@@ -1,0 +1,128 @@
+{
+  "topic": "procedural-macros-overview",
+  "title": "Procedural macros (derive macros you use)",
+  "quiz": [
+    {
+      "q": "What are the three kinds of procedural macros?",
+      "options": [
+        "Derive, attribute, and function-like",
+        "Struct, enum, and trait",
+        "Sync, async, and blocking",
+        "Public, private, and crate-level"
+      ],
+      "answer": 0,
+      "explain": "Proc macros come in three flavors: derive (#[derive(X)]), attribute (#[tokio::main]), and function-like (sqlx::query!(...))."
+    },
+    {
+      "q": "What does `#[derive(Serialize)]` actually do to your struct's own definition?",
+      "options": [
+        "Rewrites the struct's fields",
+        "Nothing to the definition itself — it generates a separate impl Serialize block next to it",
+        "Deletes any unused fields",
+        "Converts the struct into an enum"
+      ],
+      "answer": 1,
+      "explain": "A derive macro adds new code (typically a trait impl) alongside your type. Your original struct or enum definition is never touched."
+    },
+    {
+      "q": "Why can't `fn main()` directly contain top-level `async` code without help?",
+      "options": [
+        "Async functions can't return values",
+        "Something has to create an async runtime and drive the future — that's what an attribute macro like #[tokio::main] generates for you",
+        "main() can never be async in any language",
+        "It actually can, no macro is needed"
+      ],
+      "answer": 1,
+      "explain": "#[tokio::main] rewrites your async fn main into a plain fn main that builds a Tokio runtime and blocks on your async body — Rust has no built-in async main."
+    },
+    {
+      "q": "What makes `sqlx::query!(\"...\")` different from an ordinary macro_rules! macro, even though both are called as name!(...)?",
+      "options": [
+        "Nothing — they work identically",
+        "sqlx::query! is a function-like proc macro that can do real compile-time work, like checking your SQL against a live database schema",
+        "macro_rules! macros are always faster to compile",
+        "sqlx::query! can only be used inside tests"
+      ],
+      "answer": 1,
+      "explain": "Function-like proc macros look like macro_rules! calls but are full Rust programs that can inspect external state (a DB schema, a file) at compile time — something pure token-matching can never do."
+    },
+    {
+      "q": "What must a crate that defines a proc macro set in its Cargo.toml?",
+      "options": [
+        "edition = \"2021\"",
+        "`proc-macro = true` under [lib]",
+        "`crate-type = [\"cdylib\"]`",
+        "Nothing special is required"
+      ],
+      "answer": 1,
+      "explain": "Proc macro crates declare `proc-macro = true` under [lib] — which also means they can only export macros, not ordinary structs or functions."
+    },
+    {
+      "q": "Why can't you define a proc macro and use it in the same crate?",
+      "options": [
+        "It's only a stylistic convention, not enforced",
+        "A proc macro must be compiled as its own artifact before the compiler can run it while compiling other code",
+        "Proc macros can only be written in a different language",
+        "Cargo doesn't allow more than one macro per crate"
+      ],
+      "answer": 1,
+      "explain": "The compiler runs proc macro code as part of compiling other crates, so the macro crate has to already be built and available — it can't be defined and consumed in a single compilation pass."
+    },
+    {
+      "q": "What does `cargo expand` do?",
+      "options": [
+        "Adds new dependencies to Cargo.toml automatically",
+        "Shows the fully macro-expanded source code, so you can see exactly what a derive or attribute macro generated",
+        "Increases your binary size for release builds",
+        "Converts macro_rules! macros into proc macros"
+      ],
+      "answer": 1,
+      "explain": "cargo expand runs your crate through real macro expansion and pretty-prints the result — the fastest way to understand or debug generated code."
+    },
+    {
+      "q": "This fails to compile: `use serde::Serialize; struct User { id: u64 } fn main() { serde_json::to_string(&User { id: 1 }).unwrap(); }`. What's missing?",
+      "options": [
+        "A semicolon after the struct definition",
+        "`#[derive(Serialize)]` above the struct — importing the trait doesn't implement it",
+        "serde_json needs to be imported separately",
+        "User needs a Debug impl"
+      ],
+      "answer": 1,
+      "explain": "`use serde::Serialize;` only brings the trait name into scope; it doesn't implement it for User. Only `#[derive(Serialize)]` actually generates that implementation."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Name the three kinds of procedural macros.",
+      "back": "Derive macros (#[derive(X)]), attribute macros (#[tokio::main]), and function-like macros (sqlx::query!(...))."
+    },
+    {
+      "front": "Does a derive macro modify your struct or enum's own definition?",
+      "back": "No — it generates separate code (usually a trait impl) alongside your type. The definition you wrote stays exactly as-is."
+    },
+    {
+      "front": "What does #[tokio::main] actually do to an `async fn main`?",
+      "back": "It replaces it with a plain fn main() that builds a Tokio runtime and blocks on your async body — Rust has no native async main."
+    },
+    {
+      "front": "What makes sqlx::query! different from a macro_rules! macro that looks the same at the call site?",
+      "back": "It's a proc macro that can do real compile-time work — like connecting to a database to check your SQL and column types — something pattern-matching macros can't do."
+    },
+    {
+      "front": "What Cargo.toml setting marks a crate as a proc macro crate?",
+      "back": "`proc-macro = true` under [lib]. Such a crate can only export macros, not ordinary items."
+    },
+    {
+      "front": "Why must a proc macro live in a different crate than the one that uses it?",
+      "back": "The compiler runs the macro's code while compiling other crates, so the macro crate must already be built as its own artifact first — it can't be defined and used in the same compilation."
+    },
+    {
+      "front": "What's the fastest way to see what a derive macro actually generated?",
+      "back": "Run `cargo expand` — it prints the fully expanded, real Rust source."
+    },
+    {
+      "front": "A struct imports `serde::Serialize` but fails `serde_json::to_string` with a 'trait bound not satisfied' error. What's the fix?",
+      "back": "Add `#[derive(Serialize)]` above the struct. Importing the trait only lets you refer to it; deriving it is what actually implements it."
+    }
+  ]
+}

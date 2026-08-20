@@ -1,0 +1,128 @@
+{
+  "topic": "declarative-macros",
+  "title": "Declarative macros (macro_rules!)",
+  "quiz": [
+    {
+      "q": "What's the key difference between how a function and a macro receive their arguments?",
+      "options": [
+        "Functions receive values; macros receive tokens (code)",
+        "Macros receive values; functions receive tokens",
+        "Both receive fully evaluated values",
+        "There's no real difference"
+      ],
+      "answer": 0,
+      "explain": "A function operates on already-evaluated values at runtime. A macro receives the raw tokens of the call and expands into new code before type checking runs."
+    },
+    {
+      "q": "When does macro_rules! expansion happen relative to type checking?",
+      "options": [
+        "Before type checking",
+        "After type checking",
+        "During type checking, interleaved",
+        "Only if compilation fails"
+      ],
+      "answer": 0,
+      "explain": "Macros expand fully into plain Rust source before the compiler starts checking types — a macro literally cannot see or reason about types."
+    },
+    {
+      "q": "In the pattern `($msg:expr)`, what does `:expr` do?",
+      "options": [
+        "Declares $msg as a function parameter",
+        "A fragment specifier that limits $msg to matching an expression",
+        "Converts $msg into a string at compile time",
+        "Marks $msg as an optional argument"
+      ],
+      "answer": 1,
+      "explain": "Fragment specifiers like :expr, :ident, :ty constrain what shape of code a captured $name is allowed to match."
+    },
+    {
+      "q": "What does `$( $x:expr ),*` mean in a macro_rules! pattern?",
+      "options": [
+        "Match exactly one expression",
+        "Match zero or more comma-separated expressions",
+        "Match a single block of code",
+        "Match a type name"
+      ],
+      "answer": 1,
+      "explain": "The $( ... ),* syntax captures a repeated, comma-separated list — the same mechanism vec! uses to accept any number of items."
+    },
+    {
+      "q": "Given `macro_rules! twice { ($x:expr) => { { $x; $x } }; }`, what does `twice!(n += 1)` do to `n`, starting from 0?",
+      "options": [
+        "Increments n by 1, because $x is evaluated once and the result reused",
+        "Increments n by 2, because $x is pasted as raw tokens and both copies run",
+        "Leaves n at 0, because macros don't execute code",
+        "Fails to compile"
+      ],
+      "answer": 1,
+      "explain": "A macro copies tokens, not values. $x appears twice in the expansion, so `n += 1` literally runs twice, adding 2 total."
+    },
+    {
+      "q": "Why does `vec[1, 2, 3]` (without the `!`) fail to compile?",
+      "options": [
+        "vec is a reserved keyword in Rust",
+        "The compiler looks for a function named vec, and none exists — only the vec! macro does",
+        "Square brackets are invalid syntax in Rust",
+        "vec! requires parentheses instead of brackets"
+      ],
+      "answer": 1,
+      "explain": "Without the !, Rust reads `vec[...]` as indexing into something named vec. No function or variable named vec exists — only the vec! macro."
+    },
+    {
+      "q": "A macro rule `($x:expr) => { ... }` is called as `my_vec![1, 2, 3]` and fails with 'no rules expected the token ,'. What's the fix?",
+      "options": [
+        "Change :expr to :ty",
+        "Add repetition: `( $( $x:expr ),* )` in the pattern, and `$( ... )*` in the expansion",
+        "Remove the square brackets from the call site",
+        "Nothing — Rust automatically handles multiple arguments"
+      ],
+      "answer": 1,
+      "explain": "A single $x:expr pattern only matches one expression. Repetition syntax is required to accept a variable-length, comma-separated list."
+    },
+    {
+      "q": "Why should you generally prefer a plain function over a macro when both could work?",
+      "options": [
+        "Functions always run faster at runtime",
+        "Macros are harder to read and debug and tooling understands them less well; reach for one only when a function truly can't do the job",
+        "Macros can't accept any arguments",
+        "Functions can't be unit tested"
+      ],
+      "answer": 1,
+      "explain": "Macros add real complexity — error messages point into the expansion, and editor tooling has weaker macro support. Use one only for variadic arguments or genuine code generation."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does the `!` in `println!`, `vec!`, `format!` signal?",
+      "back": "That you're calling a macro, not a function. Macro calls always use `!`."
+    },
+    {
+      "front": "When does a macro_rules! macro expand relative to type checking?",
+      "back": "Before type checking. Macros operate purely on tokens (syntax), so expansion happens first — the compiler only checks types on the code that comes out."
+    },
+    {
+      "front": "What is a fragment specifier?",
+      "back": "The `:type` part after a captured name in a macro pattern (e.g. `:expr`, `:ident`, `:ty`, `:block`) — it constrains what shape of code that capture is allowed to match."
+    },
+    {
+      "front": "Name four common fragment specifiers.",
+      "back": "`expr` (expression), `ident` (a bare name), `ty` (a type), `block` (a `{ }` block)."
+    },
+    {
+      "front": "What does `$( $x:expr ),*` capture in a macro pattern?",
+      "back": "Zero or more expressions, separated by commas — the mechanism behind variadic macros like `vec!`."
+    },
+    {
+      "front": "If `$x` appears twice in a macro's expansion and the caller passes `n += 1`, what happens when the macro runs?",
+      "back": "`n += 1` runs twice — macros paste raw tokens, not evaluated values, so repeating `$x` repeats the code."
+    },
+    {
+      "front": "When should you reach for a macro instead of a function?",
+      "back": "Only when a function genuinely can't do the job — a variable number of arguments, or generating new code (structs, impls, match arms) that a function can't produce."
+    },
+    {
+      "front": "What's the basic shape of a macro_rules! definition?",
+      "back": "`macro_rules! name { (pattern) => { expansion }; }` — the pattern captures pieces of the call, the expansion is the code generated in their place."
+    }
+  ]
+}

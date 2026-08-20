@@ -1,0 +1,128 @@
+{
+  "topic": "integration-testing",
+  "title": "Integration testing",
+  "quiz": [
+    {
+      "q": "How does Cargo treat each `.rs` file placed directly under `tests/`?",
+      "options": [
+        "As a module inside your library crate",
+        "As its own separate crate, compiled and linked against your library",
+        "As a script that's ignored unless named `main.rs`",
+        "As documentation, not code"
+      ],
+      "answer": 1,
+      "explain": "Every file directly under `tests/` is compiled as its own independent binary crate that depends on your library, the same way an external project would."
+    },
+    {
+      "q": "Why does `tests/api.rs` write `use my_crate::add;` instead of `use super::*;`?",
+      "options": [
+        "It's just a style preference, both work identically",
+        "Because it's a separate crate, not a child module of your library — there is no `super` to reach through",
+        "`use super::*` is deprecated",
+        "Because integration tests can't use the `use` keyword"
+      ],
+      "answer": 1,
+      "explain": "`tests/api.rs` is compiled as its own crate, so it imports your library the way any external dependency would — by crate name, not by `super`."
+    },
+    {
+      "q": "What can an integration test in `tests/` NOT see that a `#[cfg(test)] mod tests` unit test CAN?",
+      "options": [
+        "Public functions",
+        "Private (non-pub) items",
+        "The standard library",
+        "println! output"
+      ],
+      "answer": 1,
+      "explain": "Integration tests are compiled as a separate crate and only see your `pub` API, just like any real external user of your library. Unit tests live inside the crate and can see everything."
+    },
+    {
+      "q": "Why do integration tests only work for library crates?",
+      "options": [
+        "Binary crates don't support the `tests/` folder syntax",
+        "A binary crate produces no importable library artifact for a tests/*.rs file to `use`",
+        "Cargo forbids running `cargo test` on binaries",
+        "Integration tests require async code"
+      ],
+      "answer": 1,
+      "explain": "`use my_crate::...;` needs a compiled library (an rlib) to depend on. A `src/main.rs`-only project has no such library target."
+    },
+    {
+      "q": "What's wrong with naming a shared test helper file `tests/common.rs`?",
+      "options": [
+        "Nothing, it's the recommended approach",
+        "Cargo treats it as its own separate test crate, so it runs (with zero tests) and shows up in the output",
+        "It causes a compile error",
+        "It's only a problem on Windows"
+      ],
+      "answer": 1,
+      "explain": "Cargo auto-discovers every direct child of `tests/` as its own test crate. `common.rs` gets run as a (nearly empty) test binary — harmless, but noisy and not what was intended."
+    },
+    {
+      "q": "How do you correctly share setup helpers across multiple integration test files?",
+      "options": [
+        "Put them in `tests/common.rs` and import with `use`",
+        "Put them in `tests/common/mod.rs` and declare `mod common;` in each file that needs them",
+        "Copy-paste the helper code into every test file",
+        "Put them in `src/lib.rs` marked private"
+      ],
+      "answer": 1,
+      "explain": "Cargo only auto-discovers files directly inside `tests/`, not ones nested in a subdirectory — so `tests/common/mod.rs` is never treated as its own test crate. Each file opts in explicitly with `mod common;`."
+    },
+    {
+      "q": "A private helper function inside your library needs a direct test. Where should that test live?",
+      "options": [
+        "In `tests/api.rs`, since integration tests are more thorough",
+        "It can't be tested at all",
+        "In a `#[cfg(test)] mod tests` unit test inside the same file, which can see private items",
+        "In `tests/common/mod.rs`"
+      ],
+      "answer": 2,
+      "explain": "Integration tests only see `pub` items. A private helper needs a unit test inside the crate, where `use super::*` gives access to private internals."
+    },
+    {
+      "q": "What's a real cost of a large integration test suite?",
+      "options": [
+        "It makes your release binary larger",
+        "Each file in `tests/` triggers its own full compile of your library, which can noticeably slow `cargo test`",
+        "It disables unit tests",
+        "It requires nightly Rust"
+      ],
+      "answer": 1,
+      "explain": "Because each `tests/*.rs` file is a separate crate, Cargo compiles your library against each one independently — many files means many compiles."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "How does Cargo compile files inside `tests/`?",
+      "back": "Every `.rs` file directly under `tests/` is compiled as its own separate crate, linked against your library exactly like an external dependency would be."
+    },
+    {
+      "front": "What can integration tests see of your crate, and why?",
+      "back": "Only `pub` items — because each test file is a genuinely separate crate, it goes through the same visibility rules as any outside consumer of your library."
+    },
+    {
+      "front": "Why do integration tests only apply to library crates?",
+      "back": "`use my_crate::...;` requires a compiled library artifact to depend on. A binary-only crate (no `src/lib.rs`) has no importable public API."
+    },
+    {
+      "front": "What's wrong with `tests/common.rs` for shared helpers?",
+      "back": "Cargo auto-discovers it as its own test crate (with no tests in it), which is noisy and not intended — it shows up in `cargo test` output as a nearly-empty test run."
+    },
+    {
+      "front": "What's the idiomatic way to share setup code across integration test files?",
+      "back": "`tests/common/mod.rs`, declared via `mod common;` in each file that needs it — files nested in a subdirectory of `tests/` aren't auto-discovered as their own test crates."
+    },
+    {
+      "front": "Unit test or integration test: checking a private helper function directly?",
+      "back": "Unit test (`#[cfg(test)] mod tests` inside the file) — integration tests can't see private items at all."
+    },
+    {
+      "front": "What real cost scales with the number of files in `tests/`?",
+      "back": "Compile time — each file is its own crate, so Cargo recompiles your library against every one of them."
+    },
+    {
+      "front": "How would you fix a binary-only project (`src/main.rs`, no `src/lib.rs`) that wants integration tests?",
+      "back": "Move the logic you want tested into `src/lib.rs`, and make `main.rs` a thin wrapper that calls into the library."
+    }
+  ]
+}

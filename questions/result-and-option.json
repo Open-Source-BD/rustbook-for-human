@@ -1,0 +1,124 @@
+{
+  "topic": "result-and-option",
+  "title": "Option and Result",
+  "quiz": [
+    {
+      "q": "What are the two shapes of Option<T>?",
+      "options": ["Ok(v) and Err(e)", "Some(v) and None", "Value(v) and Empty", "True and False"],
+      "answer": 1,
+      "explain": "Option<T> is Some(value) when there's a value, or None when there isn't. It's Rust's safe replacement for null."
+    },
+    {
+      "q": "What are the two shapes of Result<T, E>?",
+      "options": ["Some(v) and None", "Ok(v) and Err(e)", "Pass and Fail", "Value(v) and Error(e)"],
+      "answer": 1,
+      "explain": "Result<T, E> is Ok(value) on success or Err(error) on failure, carrying a real error value describing what went wrong."
+    },
+    {
+      "q": "Why does `match` on an Option or Result help catch bugs?",
+      "options": [
+        "It runs faster than if/else",
+        "It's exhaustive — the compiler refuses to build unless every case (including None/Err) is handled",
+        "It automatically logs errors to the console",
+        "It converts Option into Result for you"
+      ],
+      "answer": 1,
+      "explain": "match requires every variant to be handled. Forget the None or Err arm and the compiler rejects the code as non-exhaustive, catching a whole class of 'forgot to check' bugs."
+    },
+    {
+      "q": "What happens when you call `.unwrap()` on a `None` or an `Err`?",
+      "options": [
+        "It returns a default value",
+        "It silently does nothing",
+        "The program panics and crashes",
+        "It returns None again"
+      ],
+      "answer": 2,
+      "explain": "unwrap() panics (crashes the program) on None/Err. It's convenient in tests and quick scripts, risky in real code a user runs."
+    },
+    {
+      "q": "What must the closure passed to `.and_then()` return?",
+      "options": [
+        "A plain value of any type",
+        "Another Option (or Result) — the same kind of container",
+        "Always a String",
+        "Nothing — and_then discards the return value"
+      ],
+      "answer": 1,
+      "explain": "and_then chains another fallible step, so its closure must itself return an Option/Result. If it returns a bare value, you wanted .map() instead."
+    },
+    {
+      "q": "You have `let price: Option<i32> = Some(10);` and want `Option<i32>` back with the value doubled. Which combinator?",
+      "options": [".and_then(|p| p * 2)", ".map(|p| p * 2)", ".unwrap_or(p * 2)", ".ok_or(p * 2)"],
+      "answer": 1,
+      "explain": ".map() transforms the value inside Some/Ok with a plain (infallible) closure and re-wraps the result automatically."
+    },
+    {
+      "q": "What does `.ok_or(err)` do?",
+      "options": [
+        "Converts a Result into an Option, discarding the error",
+        "Converts an Option into a Result, using `err` as the Err value when it's None",
+        "Panics if the Option is None",
+        "Filters an Option based on a predicate"
+      ],
+      "answer": 1,
+      "explain": ".ok_or(err) turns Option<T> into Result<T, E>: Some(v) becomes Ok(v), and None becomes Err(err)."
+    },
+    {
+      "q": "What's the difference between `.unwrap_or(default)` and `.unwrap_or_else(|| ...)`?",
+      "options": [
+        "There is no difference, they're aliases",
+        "unwrap_or takes a ready-made value; unwrap_or_else takes a closure that only runs (computing the fallback) on the failure path",
+        "unwrap_or panics, unwrap_or_else never panics",
+        "unwrap_or only works on Result, unwrap_or_else only works on Option"
+      ],
+      "answer": 1,
+      "explain": "unwrap_or's argument is always evaluated eagerly; unwrap_or_else's closure is only called when there's actually a None/Err, useful when computing the fallback is expensive."
+    },
+    {
+      "q": "`text.parse::<i32>().ok().filter(|&n| n > 0)` — what does `.filter()` do here?",
+      "options": [
+        "Removes non-digit characters from text before parsing",
+        "Converts the Result into an Option",
+        "Keeps Some(n) only if the predicate is true; otherwise turns it into None",
+        "Runs the closure on every character of the string"
+      ],
+      "answer": 2,
+      "explain": ".filter() on Option keeps Some(value) only when the predicate returns true for the inner value; otherwise it becomes None."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is Option<T> used for, versus Result<T, E>?",
+      "back": "Option<T> models 'a value might simply be absent' (no reason needed). Result<T, E> models 'an operation might fail, and here's why' — it carries an error value."
+    },
+    {
+      "front": "Why is unwrap() risky in real code?",
+      "back": "It panics (crashes the whole program) on the first None/Err it sees. Fine for tests and quick scripts; risky in anything a user runs, since there's no chance to recover or show a nice message."
+    },
+    {
+      "front": "What does .map() do on an Option/Result?",
+      "back": "Transforms the value inside Some/Ok using a plain (non-fallible) closure, leaving None/Err untouched. The result is automatically re-wrapped in Some/Ok."
+    },
+    {
+      "front": "What does .and_then() do, and how is it different from .map()?",
+      "back": "and_then chains another fallible step: its closure must itself return an Option/Result (not a bare value). Unlike map, it doesn't re-wrap — this avoids ending up with Option<Option<T>>."
+    },
+    {
+      "front": "What does .ok_or(err) do, and what does .ok() do?",
+      "back": ".ok_or(err) converts Option -> Result, using err as the Err when it's None. .ok() goes the other way, converting Result -> Option and discarding the error value."
+    },
+    {
+      "front": "unwrap_or(default) vs unwrap_or_else(|| ...) — when would you pick each?",
+      "back": "unwrap_or(default) when the fallback is cheap and ready-made. unwrap_or_else(|| ...) when computing the fallback is expensive or needs the error value — its closure only runs on the failure path."
+    },
+    {
+      "front": "What does .filter() do on an Option?",
+      "back": "Keeps Some(value) only if a predicate returns true for the inner value; otherwise turns it into None. Useful for adding a validity check after parsing or looking something up."
+    },
+    {
+      "front": "Why does `match` on Option/Result prevent a class of bugs that null checks don't?",
+      "back": "match is exhaustive — the compiler refuses to compile unless every variant (Some/None or Ok/Err) is handled, so you literally cannot forget to check the failure case."
+    }
+  ]
+}

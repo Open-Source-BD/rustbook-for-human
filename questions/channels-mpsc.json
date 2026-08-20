@@ -1,0 +1,92 @@
+{
+  "topic": "channels-mpsc",
+  "title": "Channels (mpsc)",
+  "quiz": [
+    {
+      "q": "What does Rust's concurrency motto \"share memory by communicating\" mean in practice?",
+      "options": [
+        "Threads should share a global mutable variable",
+        "Threads pass ownership of values through a channel instead of reaching into shared memory",
+        "Only `main` is allowed to hold any data",
+        "Every value must be wrapped in `unsafe`"
+      ],
+      "answer": 1,
+      "explain": "Instead of multiple threads touching the same memory, one thread sends a value down a channel and the other receives full ownership of it — no shared mutable state involved."
+    },
+    {
+      "q": "What does `mpsc` stand for, and what does it mean for `Receiver`?",
+      "options": [
+        "Multi-producer, single-consumer — there's only ever one `Receiver`",
+        "Multi-process shared cache — receivers can be cloned freely",
+        "Message-passing sync channel — it's always bounded",
+        "Multi-consumer, single-producer — only one thread may ever send"
+      ],
+      "answer": 0,
+      "explain": "`mpsc::channel()` supports many producers (clone `Sender` as needed) but exactly one consumer — `Receiver` is not `Clone`."
+    },
+    {
+      "q": "After `tx.send(value)`, what can the sending thread still do with `value`?",
+      "options": [
+        "Read it, but not mutate it",
+        "Nothing — `send` takes ownership, so `value` was moved",
+        "Clone it for free since channels borrow internally",
+        "Send it again on the same channel"
+      ],
+      "answer": 1,
+      "explain": "`Sender::send(&self, t: T)` takes `T` by value. Once sent, the value belongs to the receiving thread; using it again on the sender's side is a use-after-move error."
+    },
+    {
+      "q": "You need three threads to all send messages into one channel. What do you do?",
+      "options": [
+        "Clone the `Receiver` three times",
+        "Clone the `Sender` once per thread — each clone is a handle to the same pipe",
+        "Create three separate `mpsc::channel()` pairs and merge them manually",
+        "Wrap `tx` in a `Mutex` so threads take turns"
+      ],
+      "answer": 1,
+      "explain": "`Sender` implements `Clone` for exactly this reason. Each clone points at the same channel, so many threads can send independently."
+    },
+    {
+      "q": "When does a `for msg in rx` loop finish?",
+      "options": [
+        "After exactly one message is received",
+        "Once every `Sender` (the original plus all clones) has been dropped",
+        "As soon as the receiving thread calls `.stop()`",
+        "It never finishes automatically — you must `break` manually"
+      ],
+      "answer": 1,
+      "explain": "`Receiver` iterates until it's certain no more messages can arrive, which is exactly when every `Sender` handle has gone out of scope."
+    },
+    {
+      "q": "A `for msg in rx` loop hangs forever even though every worker thread finished. What's the likely cause?",
+      "options": [
+        "The channel is bounded and full",
+        "A `Sender` clone (maybe the original `tx`, unused after cloning) is still alive somewhere and was never dropped",
+        "`Receiver` requires an explicit `.close()` call",
+        "The messages are the wrong type"
+      ],
+      "answer": 1,
+      "explain": "As long as any `Sender` handle exists — even one nobody is actively using — the channel isn't considered closed, so the receiving loop keeps waiting."
+    },
+    {
+      "q": "Why might `.send(value).unwrap()` panic in a long-running producer thread?",
+      "options": [
+        "`send` always fails on the first call",
+        "`send` returns `Err` once the `Receiver` has been dropped, and there's nothing left to receive the value",
+        "Only `.recv()` can fail, never `.send()`",
+        "Sending more than one value always errors"
+      ],
+      "answer": 1,
+      "explain": "If the reader gave up and dropped `rx`, `send` returns `Err(SendError(value))` handing the value back. Unwrapping that panics — worth handling explicitly in long-lived producers."
+    }
+  ],
+  "flashcards": [
+    { "front": "Create a channel?", "back": "`let (tx, rx) = mpsc::channel();` — `tx` is the `Sender`, `rx` is the `Receiver`." },
+    { "front": "What does `mpsc` stand for?", "back": "Multi-producer, single-consumer: many `Sender`s (via `.clone()`), exactly one `Receiver`." },
+    { "front": "What does `.send(value)` do to `value`?", "back": "Moves it across the channel — the receiving thread gets ownership, not a reference." },
+    { "front": "How do multiple threads send into one channel?", "back": "Clone the `Sender` (`tx.clone()`) once per thread — each clone is a handle to the same underlying pipe." },
+    { "front": "When does `for msg in rx` stop looping?", "back": "Automatically, once every `Sender` (original and all clones) has been dropped — no manual close needed." },
+    { "front": "Why does an unused `Sender` clone left alive cause a hang?", "back": "The channel only closes once ALL senders are gone. One forgotten clone (even idle) keeps the receiver waiting forever." },
+    { "front": "Can you clone a `Receiver`?", "back": "No — only `Sender` is `Clone`. `std::sync::mpsc` always has exactly one consumer." }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "topic": "cfg-and-feature-flags",
+  "title": "cfg and Cargo feature flags",
+  "quiz": [
+    {
+      "q": "What happens to code under a `#[cfg(...)]` attribute whose condition is false for this build?",
+      "options": [
+        "It runs but is wrapped in an implicit `if false`",
+        "It is not compiled at all — as if it were deleted",
+        "It compiles but prints a warning every time it runs",
+        "It runs only in debug builds"
+      ],
+      "answer": 1,
+      "explain": "`#[cfg(...)]` is evaluated at compile time. A false condition means the item is never compiled in, not skipped at runtime."
+    },
+    {
+      "q": "Which `#[cfg(...)]` condition is true only when compiling with `cargo test`?",
+      "options": [
+        "#[cfg(debug_assertions)]",
+        "#[cfg(test)]",
+        "#[cfg(target_os = \"test\")]",
+        "#[cfg(feature = \"test\")]"
+      ],
+      "answer": 1,
+      "explain": "`#[cfg(test)]` is true specifically when the crate is being compiled for testing, keeping test-only code out of normal binaries."
+    },
+    {
+      "q": "You write `#[cfg(feature = \"json\")]` in your code but never add `json` to `[features]` in Cargo.toml. What happens?",
+      "options": [
+        "Cargo automatically declares the feature for you",
+        "It's a compile error immediately",
+        "The code is silently excluded forever, since the feature can never be turned on, and modern Cargo warns about it",
+        "The feature defaults to enabled"
+      ],
+      "answer": 2,
+      "explain": "An undeclared feature can never be enabled, so the gated code is permanently compiled out. Modern Cargo also emits an `unexpected cfg condition value` warning."
+    },
+    {
+      "q": "What does `optional = true` on a Cargo dependency do?",
+      "options": [
+        "Makes the dependency's version requirement optional",
+        "Prevents the dependency from being compiled in unless something enables it (typically via a matching feature)",
+        "Downloads the dependency lazily at runtime",
+        "Makes the dependency's API calls return Option instead of the real type"
+      ],
+      "answer": 1,
+      "explain": "`optional = true` means the dependency is only compiled in when a feature (usually `dep:name` in a `[features]` entry) turns it on — otherwise it's left out entirely."
+    },
+    {
+      "q": "In `[features] json = [\"dep:serde_json\"]`, what does the `dep:` prefix accomplish that plain `\"serde_json\"` would not?",
+      "options": [
+        "It enables the serde_json dependency without also creating a public feature literally named serde_json",
+        "It marks serde_json as a dev-dependency",
+        "It pins serde_json to a specific version",
+        "It has no effect — dep: and no prefix are identical"
+      ],
+      "answer": 0,
+      "explain": "Without `dep:`, Cargo also creates an implicit public feature named after the dependency itself, which is usually not intended. `dep:name` enables the dependency directly."
+    },
+    {
+      "q": "Two crates in the same dependency graph both depend on `logging-lib`. One enables its `colors` feature; the other doesn't request it either way. What happens in the final build?",
+      "options": [
+        "Each crate gets its own separately-compiled copy of logging-lib, with different features",
+        "The build fails because of a feature conflict",
+        "logging-lib is compiled once with `colors` enabled, since features are additive/unioned across the whole graph",
+        "colors is enabled only for the crate that requested it"
+      ],
+      "answer": 2,
+      "explain": "Cargo builds each dependency once per build with the union of every feature any crate in the graph requested — features are additive, not per-crate."
+    },
+    {
+      "q": "Why should a Cargo feature only ever add capability, never change existing behavior in a conflicting way?",
+      "options": [
+        "Because Cargo compiles a separate copy of the crate for every feature combination",
+        "Because features are unioned across the whole dependency graph, so one crate's needs can't be isolated from another's in the same build",
+        "Because features are resolved at runtime, not compile time",
+        "Because rustc rejects any feature that changes behavior"
+      ],
+      "answer": 1,
+      "explain": "Since features unify per build rather than per crate, a feature that changes behavior (instead of only adding to it) can silently affect a completely different crate that happens to share the same dependency."
+    },
+    {
+      "q": "What's a risk of never testing your crate with `--no-default-features`?",
+      "options": [
+        "The crate won't compile at all without default features",
+        "Code behind non-default features can silently rot, since it's never actually exercised",
+        "Cargo will refuse to publish the crate",
+        "It has no real risk — default features are always identical to no features"
+      ],
+      "answer": 1,
+      "explain": "If your own builds always include the default features, feature-gated code paths outside that default combination can break without anyone noticing until a user hits them."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does #[cfg(...)] do, conceptually?",
+      "back": "It's an if-statement the compiler evaluates before your program exists. If the condition is false, the item is not compiled in at all — it's gone, not just skipped."
+    },
+    {
+      "front": "Name three common #[cfg(...)] conditions besides feature checks.",
+      "back": "#[cfg(target_os = \"linux\")] (or macos/windows), #[cfg(test)] (true only under cargo test), and #[cfg(debug_assertions)] (true in debug builds, false in --release)."
+    },
+    {
+      "front": "How do you declare a Cargo feature, and how do you check it in code?",
+      "back": "Declare it in Cargo.toml under [features], e.g. `json = []`. Check it in code with `#[cfg(feature = \"json\")]`."
+    },
+    {
+      "front": "How do you make a dependency opt-in behind a feature?",
+      "back": "Mark the dependency `optional = true`, then add a feature that enables it via `dep:` syntax, e.g. `json = [\"dep:serde_json\"]`."
+    },
+    {
+      "front": "What does the `dep:` prefix in a feature's dependency list do?",
+      "back": "It enables the named optional dependency without also implicitly creating a separate public feature with that same name."
+    },
+    {
+      "front": "Are Cargo features additive or exclusive across a dependency graph?",
+      "back": "Additive. Each dependency is compiled once per build with the union of every feature any crate in the graph enabled — there's no per-crate isolation."
+    },
+    {
+      "front": "Why must a feature never change existing behavior in a conflicting way?",
+      "back": "Because features are unioned across the whole build, a behavior-changing feature turned on by one crate would silently affect every other crate sharing that dependency in the same build."
+    },
+    {
+      "front": "What warning does modern Cargo give for an undeclared feature checked with #[cfg(feature = \"...\")]?",
+      "back": "`unexpected cfg condition value` — and the gated code is permanently excluded, since a feature that was never declared can never be turned on."
+    }
+  ]
+}

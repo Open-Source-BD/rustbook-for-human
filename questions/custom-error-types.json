@@ -1,0 +1,119 @@
+{
+  "topic": "custom-error-types",
+  "title": "Custom error types",
+  "quiz": [
+    {
+      "q": "Why write a custom error enum instead of just returning `Box<dyn Error>` everywhere?",
+      "options": [
+        "Box<dyn Error> doesn't compile in stable Rust",
+        "A custom enum lets callers match on exactly which failure mode happened; Box<dyn Error> erases that distinction",
+        "Custom enums are faster at runtime",
+        "Box<dyn Error> can't be printed with Display"
+      ],
+      "answer": 1,
+      "explain": "Box<dyn Error> type-erases the concrete error, so a caller can only print it. A dedicated enum with one variant per failure mode lets callers `match` and react differently to each case."
+    },
+    {
+      "q": "What's the idiomatic shape of a custom error type for a function with multiple failure modes?",
+      "options": [
+        "A single struct with a String message field",
+        "An enum with one variant per distinct way the operation can fail",
+        "A tuple of booleans, one per possible error",
+        "Reusing std::io::Error for every kind of failure"
+      ],
+      "answer": 1,
+      "explain": "One enum variant per failure mode keeps the caller's match meaningful — they can distinguish 'missing' from 'invalid' from any other case."
+    },
+    {
+      "q": "What is `impl std::fmt::Display` for on an error type?",
+      "options": [
+        "It provides the {:?} Debug representation",
+        "It provides the {} representation — a human-readable message",
+        "It's required for the type to derive Debug",
+        "It converts the error into a Result"
+      ],
+      "answer": 1,
+      "explain": "Display gives the {} format — the human-facing message a user or log line would show, as opposed to Debug's {:?} which is for programmers."
+    },
+    {
+      "q": "What two traits does `std::error::Error` require as supertraits?",
+      "options": ["Clone and PartialEq", "Debug and Display", "Send and Sync", "Copy and Default"],
+      "answer": 1,
+      "explain": "std::error::Error requires Debug + Display, which is why both need to be implemented (or derived, for Debug) before you can implement Error."
+    },
+    {
+      "q": "What does implementing `impl std::error::Error for MyError {}` (empty body) actually give you?",
+      "options": [
+        "Nothing, the body must not be empty",
+        "It marks MyError as interoperable with the broader error-handling ecosystem — Box<dyn Error>, ? conversions, logging tools",
+        "It automatically derives Display for you",
+        "It disables the compiler's exhaustiveness checks"
+      ],
+      "answer": 1,
+      "explain": "Error has sensible defaults (source() returns None by default), so an empty impl block is valid and sufficient to make the type interoperate with code expecting `E: std::error::Error` or Box<dyn Error>."
+    },
+    {
+      "q": "Why implement `From<ParseIntError> for MyError`?",
+      "options": [
+        "It's required to derive Debug",
+        "So `?` can automatically convert a ParseIntError into MyError at any call site inside a function returning Result<_, MyError>",
+        "It lets you print the error with println!",
+        "It's needed to store the error in a Vec"
+      ],
+      "answer": 1,
+      "explain": "`?` calls From::from on the error it sees. Implementing From<ParseIntError> for MyError once means every `?` on a fallible parse call converts automatically, no .map_err needed."
+    },
+    {
+      "q": "What does the `source()` method on the `Error` trait provide?",
+      "options": [
+        "The file and line number where the error occurred",
+        "A way to walk the underlying cause chain when your error wraps another error",
+        "The original input string that caused the error",
+        "A timestamp of when the error happened"
+      ],
+      "answer": 1,
+      "explain": "source() (default None) lets you expose a wrapped error, so callers/logging tools can print a full 'caused by' chain instead of just the top-level message."
+    },
+    {
+      "q": "A function returns `Result<u16, ConfigError>` and calls `text.parse()?` inside it, but there's no `From<ParseIntError> for ConfigError`. What happens?",
+      "options": [
+        "It compiles, silently discarding the ParseIntError",
+        "Compile error — `?` has no way to convert ParseIntError into ConfigError",
+        "It compiles and panics at runtime instead",
+        "Rust automatically generates the From impl"
+      ],
+      "answer": 1,
+      "explain": "Without the From impl, `?` cannot convert the error type, so the compiler rejects the code with a type mismatch — the same rule from the ? operator lesson."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What's the idiomatic shape of a custom error type with multiple failure modes?",
+      "back": "An enum with one variant per distinct failure mode — this keeps a caller's match meaningful, letting them distinguish and react to each case separately."
+    },
+    {
+      "front": "What does Display give an error type, versus Debug?",
+      "back": "Display provides the {} representation — a human-readable message. Debug provides {:?} — a programmer-facing representation, usually just #[derive(Debug)]."
+    },
+    {
+      "front": "What two traits must an error type already implement before it can implement std::error::Error?",
+      "back": "Debug and Display — they're required supertraits of std::error::Error."
+    },
+    {
+      "front": "Why implement std::error::Error even with an empty body?",
+      "back": "It makes your type interoperate with the broader error ecosystem: Box<dyn Error>, code generic over E: std::error::Error, and ?-conversions that rely on the Error trait."
+    },
+    {
+      "front": "Why implement From<SourceError> for MyError instead of using .map_err() everywhere?",
+      "back": "Implement From once per source error type, and every `?` on that error type inside a function returning Result<_, MyError> converts automatically — no repeated .map_err(...) at each call site."
+    },
+    {
+      "front": "What does the source() method on Error do, and what's its default?",
+      "back": "It exposes a wrapped/underlying error so callers can walk the cause chain. Its default implementation returns None; override it when your error variant wraps another error."
+    },
+    {
+      "front": "Why is one giant catch-all error variant (e.g. Other(String)) a mistake?",
+      "back": "It defeats the purpose of a custom error type — callers can no longer match on which specific thing failed, they're back to just reading a message string."
+    }
+  ]
+}

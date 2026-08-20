@@ -1,0 +1,128 @@
+{
+  "topic": "build-scripts",
+  "title": "Build scripts (build.rs)",
+  "quiz": [
+    {
+      "q": "How does Cargo know to run a build script?",
+      "options": [
+        "You register it in [build-dependencies] in Cargo.toml",
+        "It automatically compiles and runs any file named build.rs at the crate root before the rest of the build",
+        "You pass --build-script build.rs to cargo build",
+        "You call it manually from main.rs before any other code"
+      ],
+      "answer": 1,
+      "explain": "A build.rs file at the crate root (next to Cargo.toml) is found and run automatically by Cargo before the main build — no explicit wiring is needed."
+    },
+    {
+      "q": "How does a build script communicate instructions back to Cargo?",
+      "options": [
+        "By writing to a file named cargo.json",
+        "By printing specially-formatted lines to stdout, like cargo::rerun-if-changed=...",
+        "By returning a special exit code for each instruction",
+        "By setting environment variables before it exits"
+      ],
+      "answer": 1,
+      "explain": "Cargo parses the build script's stdout for lines starting with the cargo:: (or legacy cargo:) prefix, treating each one as an instruction."
+    },
+    {
+      "q": "What is `cargo::rerun-if-changed=PATH` for?",
+      "options": [
+        "It deletes PATH before the build script runs",
+        "It tells Cargo to only re-run the build script when PATH changes, instead of on every build",
+        "It copies PATH into OUT_DIR",
+        "It sets PATH as an environment variable for the main crate"
+      ],
+      "answer": 1,
+      "explain": "Without it, Cargo's default heuristics may re-run (or fail to re-run) the script incorrectly; declaring the exact file(s) it depends on keeps rebuilds correct and fast."
+    },
+    {
+      "q": "A build script does `println!(\"cargo::rustc-env=GIT_HASH={}\", hash)`. How does the main crate read that value at compile time?",
+      "options": [
+        "std::env::var(\"GIT_HASH\") at runtime",
+        "env!(\"GIT_HASH\") — resolved at compile time and baked into the binary",
+        "It's automatically available as a global constant named GIT_HASH",
+        "include!(\"GIT_HASH\")"
+      ],
+      "answer": 1,
+      "explain": "cargo::rustc-env sets a compile-time environment variable; env!(\"KEY\") in the crate's own code reads it and bakes the value directly into the binary."
+    },
+    {
+      "q": "Why does Cargo only parse a build script's stdout, and not stderr, for instructions?",
+      "options": [
+        "stderr is reserved for compiler errors only",
+        "That's just the convention — printing an instruction via eprintln! is silently ignored, shown only as plain diagnostic text",
+        "stderr output isn't captured by Cargo at all",
+        "Instructions can be printed to either stream interchangeably"
+      ],
+      "answer": 1,
+      "explain": "Only stdout lines are parsed as Cargo instructions. Anything sent to stderr is just displayed as ordinary text (e.g. with -vv), never acted on."
+    },
+    {
+      "q": "When cross-compiling, on which machine does build.rs itself actually run?",
+      "options": [
+        "The target platform being compiled for",
+        "The host machine doing the compiling — never the target",
+        "Both, once for each",
+        "Neither — it runs inside a sandboxed emulator of the target"
+      ],
+      "answer": 1,
+      "explain": "build.rs is always compiled for, and executed on, the host machine, even when the crate itself is being cross-compiled for a different target."
+    },
+    {
+      "q": "Name one common real-world use of a build script.",
+      "options": [
+        "Running the crate's unit tests",
+        "Generating Rust code from a schema (e.g. protobuf), compiling a bundled C library, or embedding metadata like a git commit hash",
+        "Publishing the crate to crates.io",
+        "Formatting the crate's source code"
+      ],
+      "answer": 1,
+      "explain": "Typical build.rs uses include codegen from an external schema, compiling/linking native C code (often via the `cc` crate), and stamping in build-time metadata."
+    },
+    {
+      "q": "Why is a slow or network-dependent build script a real problem?",
+      "options": [
+        "It only affects the very first build, never subsequent ones",
+        "It makes every single `cargo build` slower and less reproducible, since it runs before the crate compiles",
+        "Cargo automatically caches its result forever regardless of changes",
+        "It has no real downside since it runs in parallel with compilation"
+      ],
+      "answer": 1,
+      "explain": "The build script runs before compilation on every build that triggers it, so anything slow or flaky inside it (like a network call) taxes every build and can break offline/reproducible builds."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Where does a build script live, and how does Cargo find it?",
+      "back": "A file named build.rs at the crate root, next to Cargo.toml (not inside src/). Cargo automatically compiles and runs it before the rest of the crate builds — no configuration needed."
+    },
+    {
+      "front": "How does a build script send instructions to Cargo?",
+      "back": "By printing specially-formatted lines to stdout, such as `cargo::rerun-if-changed=...` or `cargo::rustc-env=KEY=VALUE`. Cargo parses stdout for these; stderr is just shown as plain text."
+    },
+    {
+      "front": "What does cargo::rerun-if-changed=PATH do, and why does it matter?",
+      "back": "It tells Cargo to only re-run the build script when PATH changes. Omitting it risks Cargo not noticing a dependency changed and reusing stale generated output."
+    },
+    {
+      "front": "How do you get a build-script-set value into your crate's compiled code?",
+      "back": "The build script prints `cargo::rustc-env=KEY=VALUE`; the crate's own code reads it at compile time with `env!(\"KEY\")`, which bakes the value into the binary."
+    },
+    {
+      "front": "On which machine does build.rs run when cross-compiling?",
+      "back": "Always the host machine doing the compiling, never the target. Reading cfg!(target_os = ...) inside build.rs reflects the host, not the target you're building for."
+    },
+    {
+      "front": "List three common real uses of a build script.",
+      "back": "Generating Rust code from a schema (e.g. protobuf/GraphQL), compiling and linking a bundled C library (often via the `cc` crate), and embedding build metadata like a git commit hash."
+    },
+    {
+      "front": "What's the downside of a slow or network-dependent build script?",
+      "back": "It runs before every triggered `cargo build`, so it slows down every build and can make builds flaky or non-reproducible if it depends on network access."
+    },
+    {
+      "front": "What happens if a build script panics because required input is missing?",
+      "back": "The entire build aborts. A bare .unwrap() gives whoever hits it an unhelpful backtrace instead of a clear explanation of what was missing and why."
+    }
+  ]
+}

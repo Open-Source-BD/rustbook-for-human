@@ -1,0 +1,119 @@
+{
+  "topic": "regex-and-text-processing",
+  "title": "Regex and text processing",
+  "quiz": [
+    {
+      "q": "Does Rust's standard library include regex support?",
+      "options": [
+        "Yes, in std::regex",
+        "No — the regex crate is the ecosystem standard",
+        "Yes, but only for ASCII text",
+        "Only on the nightly compiler"
+      ],
+      "answer": 1,
+      "explain": "std has no regex engine at all. The regex crate, backed by a linear-time engine, is what the ecosystem reaches for."
+    },
+    {
+      "q": "Why should you compile a `Regex` once and reuse it, instead of calling `Regex::new` inside a loop?",
+      "options": [
+        "Regex::new is deprecated",
+        "Compiling the pattern is the expensive part; recompiling every iteration wastes that work over and over",
+        "Rust doesn't allow Regex::new inside loops",
+        "A Regex value can only be used once and then must be discarded"
+      ],
+      "answer": 1,
+      "explain": "Compiling a pattern into a matching engine costs meaningfully more than running a match — always compile once and reuse."
+    },
+    {
+      "q": "Why does `Regex::new` need a raw string like `r\"\\d{4}\"` instead of `\"\\d{4}\"`?",
+      "options": [
+        "Raw strings execute faster at runtime",
+        "Without r\"\", Rust tries to interpret \\d as its own escape sequence and rejects it at compile time",
+        "Regex patterns must be written in all uppercase",
+        "It's purely a style convention with no real effect on compilation"
+      ],
+      "answer": 1,
+      "explain": "\\d isn't a valid Rust string escape, so a plain string literal fails to compile before the regex engine ever sees the pattern. r\"\" makes backslashes literal."
+    },
+    {
+      "q": "What does a named capture group like `(?<year>\\d{4})` let you do?",
+      "options": [
+        "Nothing extra — it behaves identically to an unnamed group",
+        "Pull out the match by name (&caps[\"year\"]) instead of a fragile numeric index",
+        "Make the regex engine run measurably faster",
+        "Force the match to be case-insensitive"
+      ],
+      "answer": 1,
+      "explain": "Named groups read better and stay correct if the pattern's groups are later reordered — a numeric index like &caps[1] would silently break."
+    },
+    {
+      "q": "What does `.is_match()` return?",
+      "options": ["The matched text itself", "A bool", "A Vec of every match", "An Option<Captures>"],
+      "answer": 1,
+      "explain": "is_match() only answers yes/no. Use .find() for the matched text or .captures() for its labeled pieces."
+    },
+    {
+      "q": "Why might a regex pattern from Python or JavaScript fail to port directly to Rust's `regex` crate?",
+      "options": [
+        "Rust's regex crate uses an entirely different syntax for digits and letters",
+        "Rust's regex crate deliberately doesn't support backreferences or lookaround, to guarantee linear-time matching",
+        "Rust regexes can only match ASCII text",
+        "Rust's regex crate requires every pattern to use named groups"
+      ],
+      "answer": 1,
+      "explain": "Leaving out backreferences/lookaround avoids catastrophic backtracking, guaranteeing linear-time matching — but it means some patterns from other engines need rewriting."
+    },
+    {
+      "q": "Which is the more idiomatic way to check if a path ends with \".rs\"?",
+      "options": [
+        "Regex::new(r\"\\.rs$\").unwrap().is_match(path)",
+        "path.ends_with(\".rs\")",
+        "Both are equally idiomatic — pick whichever",
+        "Neither approach actually works for this"
+      ],
+      "answer": 1,
+      "explain": "A fixed suffix check doesn't need a pattern-matching engine — str::ends_with is clearer and needs no dependency."
+    },
+    {
+      "q": "What lets a `Regex` be compiled exactly once and reused everywhere without threading it through every function call?",
+      "options": [
+        "A static std::sync::LazyLock<Regex> (or compiling once at startup)",
+        "Calling regex::Regex::clone() before each use",
+        "Creating a fresh Regex::new() call inside each function",
+        "Wrapping every call site in an unsafe block"
+      ],
+      "answer": 0,
+      "explain": "LazyLock builds the Regex the first time it's touched and reuses it for every call after that, avoiding the need to pass it around manually."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Does std have regex support?",
+      "back": "No — the regex crate is the ecosystem standard, built on a linear-time (non-backtracking) engine."
+    },
+    {
+      "front": "What's the expensive part of using a Regex?",
+      "back": "Compiling the pattern with Regex::new — always compile once and reuse the same Regex, never per-call or per-loop-iteration."
+    },
+    {
+      "front": "Why do regex patterns need a raw string (r\"...\")?",
+      "back": "So backslashes reach the regex engine literally instead of being interpreted as Rust's own string escapes first."
+    },
+    {
+      "front": "What does .captures() with a named group let you do?",
+      "back": "Extract a match by name, e.g. &caps[\"year\"], instead of a fragile numeric index like &caps[1]."
+    },
+    {
+      "front": "What does the regex crate deliberately not support, and why?",
+      "back": "Backreferences and lookaround — leaving them out guarantees linear-time matching with no catastrophic backtracking."
+    },
+    {
+      "front": "When should you reach for a plain str method instead of regex?",
+      "back": "When you're matching a fixed substring or doing a simple split — split_once, trim, starts_with, contains are clearer and need no dependency."
+    },
+    {
+      "front": "How can you compile a Regex once and share it across your whole program?",
+      "back": "Store it in a static std::sync::LazyLock<Regex>, which builds it lazily on first use and reuses it after that."
+    }
+  ]
+}

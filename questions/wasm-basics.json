@@ -1,0 +1,128 @@
+{
+  "topic": "wasm-basics",
+  "title": "Rust and WebAssembly",
+  "quiz": [
+    {
+      "q": "Which compile target is used to build Rust for the browser / generic WASM hosts?",
+      "options": [
+        "wasm32-unknown-unknown",
+        "x86_64-unknown-linux-gnu",
+        "wasm32-wasi",
+        "browser-wasm32"
+      ],
+      "answer": 0,
+      "explain": "wasm32-unknown-unknown is the standard target for browser and generic WASM hosts — 32-bit WASM with no specific vendor or OS underneath it."
+    },
+    {
+      "q": "What does #[wasm_bindgen] on a function actually generate?",
+      "options": [
+        "A unit test for the function",
+        "The marshalling/interop glue that lets JavaScript call the function and converts values between Rust and JS types",
+        "A benchmark harness",
+        "Documentation comments"
+      ],
+      "answer": 1,
+      "explain": "#[wasm_bindgen] generates the code that converts values (like String <-> JS string) across the boundary and emits a JS wrapper, so the function is directly callable from JavaScript."
+    },
+    {
+      "q": "What does `wasm-pack build` do that plain `cargo build --target wasm32-unknown-unknown` does not?",
+      "options": [
+        "Nothing extra — they're identical commands",
+        "It runs the wasm-bindgen CLI over the compiled output and assembles a ready-to-import pkg/ directory with JS glue and a package.json",
+        "It installs the wasm32-unknown-unknown target automatically",
+        "It publishes the crate to crates.io"
+      ],
+      "answer": 1,
+      "explain": "cargo build alone produces a raw .wasm file. wasm-pack build additionally runs wasm-bindgen's post-processing step and packages everything into an importable pkg/ directory."
+    },
+    {
+      "q": "Why can't Rust code compiled to wasm32-unknown-unknown open a raw TCP socket?",
+      "options": [
+        "It's a Rust language limitation unrelated to WASM",
+        "The browser sandbox doesn't expose raw sockets to WASM code at all — networking only happens through JS APIs like fetch or WebSocket",
+        "TCP sockets require a feature flag that's always disabled by default",
+        "It can, as long as std::net is imported"
+      ],
+      "answer": 1,
+      "explain": "The browser sandbox has no concept of raw sockets for WASM — any networking has to go through JavaScript-provided APIs like fetch() or WebSocket, which Rust code must call into."
+    },
+    {
+      "q": "What does console_error_panic_hook::set_once() do, and when should you call it?",
+      "options": [
+        "It prevents panics from happening at all",
+        "It makes a panic's real message and location show up in the browser console instead of an opaque JS exception; call it once at startup during development",
+        "It disables all console output for performance",
+        "It converts panics into Result::Err automatically"
+      ],
+      "answer": 1,
+      "explain": "Without a panic hook, a Rust panic in WASM surfaces as an unhelpful, message-free JS runtime error. Installing the hook once at startup restores a real, readable panic message."
+    },
+    {
+      "q": "In Cargo.toml, what crate-type does wasm-bindgen's tooling need to produce a .wasm module plus JS bindings?",
+      "options": [
+        "bin",
+        "cdylib",
+        "proc-macro",
+        "staticlib only, with no rlib"
+      ],
+      "answer": 1,
+      "explain": "wasm-bindgen's CLI post-processes a cdylib (C-compatible dynamic library) artifact. A plain rlib, the default library format, isn't something it can turn into a WASM+JS package."
+    },
+    {
+      "q": "What's the practical difference between `wasm-pack build --target web` and the default `--target bundler`?",
+      "options": [
+        "There is no difference — both flags produce identical output",
+        "--target web generates an ES module you initialize yourself; --target bundler assumes a tool like webpack is handling that initialization step",
+        "--target web only works in Firefox",
+        "--target bundler skips generating a .wasm file entirely"
+      ],
+      "answer": 1,
+      "explain": "The generated JS glue differs by target. Using the wrong one breaks the import/init pattern your JS code expects, since web and bundler targets structure the output differently."
+    },
+    {
+      "q": "Why should you avoid making many small calls across the JS/Rust boundary with large or complex data?",
+      "options": [
+        "wasm-bindgen has a hard limit of 10 calls per second",
+        "Each boundary crossing has real conversion/serialization cost, so many small calls with big payloads add up; typed arrays or serde-wasm-bindgen are better for bulk data",
+        "JavaScript can only call one Rust function per page load",
+        "It causes a compile error, not a performance issue"
+      ],
+      "answer": 1,
+      "explain": "Crossing the WASM/JS boundary isn't free — every call converts values between representations. For large data, prefer typed arrays or serde-wasm-bindgen over many small calls."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Why is Rust an unusually good fit for compiling to WebAssembly?",
+      "back": "It has no garbage collector and a very small runtime, so compiled WASM stays small and fast without needing a language runtime shipped alongside it."
+    },
+    {
+      "front": "What target do you compile Rust to for the browser, and how do you install it?",
+      "back": "wasm32-unknown-unknown, installed once per machine with `rustup target add wasm32-unknown-unknown`."
+    },
+    {
+      "front": "What does #[wasm_bindgen] generate?",
+      "back": "The interop glue that lets JavaScript call a Rust function directly — converting values like String <-> JS string automatically and emitting a matching JS/TypeScript wrapper."
+    },
+    {
+      "front": "What does `wasm-pack build` do beyond a plain cargo build?",
+      "back": "It compiles to wasm32-unknown-unknown AND runs the wasm-bindgen CLI over the result, producing a pkg/ directory with the .wasm file, JS glue, types, and a package.json — ready to import or publish."
+    },
+    {
+      "front": "Name three capabilities a browser-targeted WASM module does NOT have access to.",
+      "back": "A real filesystem (std::fs has nothing to act on), normal OS threads (std::thread::spawn doesn't work the usual way), and raw TCP/UDP sockets (only fetch/WebSocket via JS)."
+    },
+    {
+      "front": "What does an un-hooked panic look like in the browser console, and how do you fix it?",
+      "back": "An opaque, message-free error like 'RuntimeError: unreachable executed'. Call console_error_panic_hook::set_once() at startup (e.g. in a #[wasm_bindgen(start)] function) to get the real panic message and location."
+    },
+    {
+      "front": "What crate-type must Cargo.toml declare for wasm-bindgen's tooling to work, and why?",
+      "back": "crate-type = [\"cdylib\", \"rlib\"] in [lib]. wasm-bindgen needs the cdylib (C-compatible dynamic library) artifact to post-process into a .wasm module plus JS bindings; rlib alone isn't enough."
+    },
+    {
+      "front": "Why does crossing the JS/Rust boundary with large data need care?",
+      "back": "Each call across the boundary has real conversion cost. For big payloads, use typed arrays or serde-wasm-bindgen rather than many small individual calls."
+    }
+  ]
+}

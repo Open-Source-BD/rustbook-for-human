@@ -1,0 +1,104 @@
+{
+  "topic": "shared-state-mutex-and-arc",
+  "title": "Shared state: Arc and Mutex",
+  "quiz": [
+    {
+      "q": "Why can't you use `Rc<RefCell<T>>` to share mutable state across threads?",
+      "options": [
+        "`Rc` and `RefCell` are deprecated",
+        "`Rc`'s reference count isn't updated atomically, so the compiler marks it unsafe to send across threads",
+        "`RefCell` only works with numbers",
+        "They work fine, it's just slower than `Arc<Mutex<T>>`"
+      ],
+      "answer": 1,
+      "explain": "`Rc`'s internal counter can be corrupted if two threads bump it at once. The compiler catches this at compile time by not implementing `Send` for `Rc`."
+    },
+    {
+      "q": "What does `Arc::clone(&data)` actually do?",
+      "options": [
+        "Deep-copies the value inside the `Arc`",
+        "Bumps an atomic reference count and returns another pointer to the same value",
+        "Creates a brand-new independent `Mutex`",
+        "Moves the value to the cloning thread, invalidating the original"
+      ],
+      "answer": 1,
+      "explain": "`Arc` clones are cheap by design — they share the same underlying allocation and just increment a counter, not copy the data."
+    },
+    {
+      "q": "What does `mutex.lock()` return?",
+      "options": [
+        "`&mut T` directly",
+        "`Result<MutexGuard<T>, PoisonError<...>>` — `Ok` holds a guard that derefs to `&mut T`",
+        "`bool` — whether the lock succeeded",
+        "Nothing; it just blocks and returns `()`"
+      ],
+      "answer": 1,
+      "explain": "`.lock()` blocks until available, then hands back a `Result` wrapping a `MutexGuard`. The `Err` case only occurs if the mutex was poisoned by a panic while locked."
+    },
+    {
+      "q": "When does a `MutexGuard` release its lock?",
+      "options": [
+        "You must call `.unlock()` explicitly",
+        "Automatically, when the guard is dropped (goes out of scope)",
+        "Only when the program exits",
+        "As soon as you read the value once"
+      ],
+      "answer": 1,
+      "explain": "`MutexGuard` implements `Drop`, which releases the lock. There's no manual unlock call — scoping the guard tightly is how you control lock duration."
+    },
+    {
+      "q": "Five threads each need to increment one shared counter. What's the idiomatic pattern?",
+      "options": [
+        "Pass a `&mut i32` to each thread",
+        "`Arc<Mutex<i32>>` — clone the `Arc` for each thread, `.lock()` before mutating",
+        "Give each thread its own separate counter and sum them with a channel",
+        "Wrap the counter in `Rc<Cell<i32>>`"
+      ],
+      "answer": 1,
+      "explain": "`Arc` provides thread-safe shared ownership; `Mutex` provides exclusive access. Together they're the standard way to mutate shared state safely across threads."
+    },
+    {
+      "q": "What causes the classic two-mutex deadlock?",
+      "options": [
+        "Using `Arc` instead of `Rc`",
+        "Two threads locking the same two mutexes in different orders, so each ends up waiting on a lock the other holds",
+        "Forgetting to call `Arc::clone`",
+        "A `Mutex` that contains a `String` instead of a number"
+      ],
+      "answer": 1,
+      "explain": "If thread A locks mutex 1 then mutex 2, while thread B locks mutex 2 then mutex 1, an unlucky interleaving leaves each thread holding one lock and waiting forever for the other."
+    },
+    {
+      "q": "How do you avoid the two-mutex deadlock described above?",
+      "options": [
+        "Never use more than one `Mutex` in a program",
+        "Always lock the mutexes in the same global order across every code path",
+        "Wrap every `Mutex` in an `Arc` twice",
+        "Call `.lock().unwrap()` instead of `.lock()`"
+      ],
+      "answer": 1,
+      "explain": "Deadlocks from lock ordering disappear if every thread acquires shared locks in a consistent order — then the circular-wait interleaving simply can't occur."
+    },
+    {
+      "q": "What does the compiler do if you try to share a plain (non-`Arc`, non-`Mutex`) mutable reference across threads?",
+      "options": [
+        "Allows it, but warns you",
+        "Refuses to compile — the type isn't `Send`/`Sync` for that kind of sharing",
+        "Silently clones the value per thread",
+        "Automatically wraps it in a `Mutex` for you"
+      ],
+      "answer": 1,
+      "explain": "Rust's `Send`/`Sync` traits are checked at compile time. A bare shared mutable reference across threads fails to compile rather than risking a data race at runtime."
+    }
+  ],
+  "flashcards": [
+    { "front": "Share ownership of a value across threads?", "back": "`Arc<T>` — `Arc::clone(&x)` bumps an atomic refcount (cheap); the data itself is shared, not copied." },
+    { "front": "Mutate shared data safely across threads?", "back": "`Mutex<T>` — `.lock()` blocks until free, returns a `MutexGuard` that derefs to `&mut T`." },
+    { "front": "When does a `MutexGuard` unlock?", "back": "Automatically when it's dropped (goes out of scope) — no manual unlock call needed." },
+    { "front": "Standard pattern for shared mutable state across threads?", "back": "`Arc<Mutex<T>>` — `Arc` for shared ownership, `Mutex` for exclusive one-at-a-time access." },
+    { "front": "Why not `Rc<RefCell<T>>` across threads?", "back": "`Rc`'s refcount isn't atomic and isn't `Send` — the compiler refuses to let it cross a thread boundary. Use `Arc<Mutex<T>>` instead." },
+    { "front": "What causes a two-mutex deadlock?", "back": "Two threads locking the same two mutexes in different orders — each ends up holding one lock while waiting on the other, forever." },
+    { "front": "How do you prevent lock-ordering deadlocks?", "back": "Always acquire shared mutexes in the same global order, on every code path, everywhere in the program." },
+    { "front": "What does `.lock()` return, exactly?", "back": "`Result<MutexGuard<T>, PoisonError<...>>` — `Err` only if another thread panicked while holding the lock (a 'poisoned' mutex)." }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "topic": "unit-testing",
+  "title": "Unit testing",
+  "quiz": [
+    {
+      "q": "What does the `#[test]` attribute do?",
+      "options": [
+        "Marks a function as a test so `cargo test` discovers and runs it",
+        "Makes a function run automatically at program startup",
+        "Tells the compiler to optimize the function more aggressively",
+        "Marks a function as deprecated"
+      ],
+      "answer": 0,
+      "explain": "`#[test]` is what `cargo test` looks for. A function without it is treated as ordinary code and never gets run as a test."
+    },
+    {
+      "q": "Which macro fails the test when its two arguments are equal?",
+      "options": ["assert!", "assert_eq!", "assert_ne!", "assert_panic!"],
+      "answer": 2,
+      "explain": "`assert_ne!(a, b)` panics (failing the test) if `a` and `b` ARE equal — the 'these must differ' check."
+    },
+    {
+      "q": "What does `#[cfg(test)]` on `mod tests` actually do?",
+      "options": [
+        "It hides the module's compile warnings",
+        "It compiles the module only when running `cargo test`, so it's absent from release builds entirely",
+        "It runs the tests in a separate thread",
+        "It disables the tests without deleting them"
+      ],
+      "answer": 1,
+      "explain": "`#[cfg(test)]` is a compile-time switch: in a normal `cargo build`, that module isn't compiled at all, so it adds zero size or dependencies to your shipped binary."
+    },
+    {
+      "q": "Inside `#[cfg(test)] mod tests { ... }`, what does `use super::*;` do?",
+      "options": [
+        "Imports every crate in the Cargo registry",
+        "Brings items from the parent module (including private ones) into scope",
+        "Runs all tests in the parent module first",
+        "Marks the module as a superset of another module"
+      ],
+      "answer": 1,
+      "explain": "`super` refers to the enclosing module. `use super::*` pulls in everything defined there, including private functions — this is why unit tests can reach private internals."
+    },
+    {
+      "q": "What's the difference between `#[should_panic]` and `#[should_panic(expected = \"msg\")]`?",
+      "options": [
+        "There is no difference, `expected` is just documentation",
+        "`expected` makes the test run faster",
+        "Plain `#[should_panic]` passes on any panic; `expected` also checks the panic message contains that substring",
+        "`expected` disables the panic check entirely"
+      ],
+      "answer": 2,
+      "explain": "Without `expected`, the test passes if the code panics for ANY reason, even an unrelated bug. Adding `expected = \"...\"` verifies the panic message actually matches, so you know you're panicking for the right reason."
+    },
+    {
+      "q": "How do you run only the tests whose name contains \"parse\"?",
+      "options": ["cargo test --only parse", "cargo test parse", "cargo run --test parse", "cargo test --filter=parse"],
+      "answer": 1,
+      "explain": "`cargo test <substring>` runs only tests whose full path (module + function name) contains that substring."
+    },
+    {
+      "q": "A `#[test]` function has no `assert!`/`assert_eq!`/`assert_ne!` calls at all. What happens when you run it?",
+      "options": [
+        "It fails to compile",
+        "It always fails",
+        "It always passes, because nothing inside it can fail",
+        "cargo test skips it with a warning"
+      ],
+      "answer": 2,
+      "explain": "A test with no assertion has nothing that can panic, so it always passes — and checks absolutely nothing. Every real test needs at least one assertion."
+    },
+    {
+      "q": "Why doesn't `#[cfg(test)]` test code increase the size of your shipped release binary?",
+      "options": [
+        "The linker strips it out after compiling",
+        "Rust compresses test code separately",
+        "It's never compiled in the first place outside of `cargo test`",
+        "Test code is stored in a separate file automatically"
+      ],
+      "answer": 2,
+      "explain": "`#[cfg(test)]` is evaluated at compile time — the annotated module simply isn't part of the source the compiler processes for a normal `cargo build`, so it can't contribute to binary size."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What three things does every test need?",
+      "back": "A `#[test]` attribute, at least one assertion, and a descriptive name so a failure tells you what broke."
+    },
+    {
+      "front": "What's the difference between `assert!`, `assert_eq!`, and `assert_ne!`?",
+      "back": "`assert!(cond)` fails if cond is false. `assert_eq!(a, b)` fails if a != b (and prints both values). `assert_ne!(a, b)` fails if a == b."
+    },
+    {
+      "front": "Where do unit tests conventionally live, and why?",
+      "back": "In a `#[cfg(test)] mod tests { use super::*; ... }` block in the same file as the code — `use super::*` gives access to private items, and `#[cfg(test)]` excludes the whole module from non-test builds."
+    },
+    {
+      "front": "What does `#[cfg(test)]` guarantee that just 'not calling the function' doesn't?",
+      "back": "It's a compile-time exclusion — the module isn't compiled at all outside `cargo test`, so it can safely use dev-dependencies and adds zero size to release builds."
+    },
+    {
+      "front": "When should you use `#[should_panic(expected = \"...\")]` instead of plain `#[should_panic]`?",
+      "back": "Whenever you want to make sure the code panicked for the RIGHT reason. Plain `#[should_panic]` passes on any panic, even from an unrelated bug."
+    },
+    {
+      "front": "How do you run just one test, or a group of tests matching a name?",
+      "back": "`cargo test <substring>` — it matches against the full test path (module::function_name)."
+    },
+    {
+      "front": "Why is a test with no assertions dangerous?",
+      "back": "It always passes, giving false confidence — it looks like coverage but checks nothing."
+    },
+    {
+      "front": "What convention does `assert_eq!(a, b)` follow, and what happens if you swap the order?",
+      "back": "Convention is `assert_eq!(actual, expected)`. Swapping still works correctly (it still fails on mismatch), it just flips which value the panic message labels 'left' vs 'right'."
+    }
+  ]
+}

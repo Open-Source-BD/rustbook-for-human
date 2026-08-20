@@ -1,0 +1,128 @@
+{
+  "topic": "doc-tests-and-benchmarks",
+  "title": "Doc tests and benchmarks",
+  "quiz": [
+    {
+      "q": "What happens to a fenced code block inside a `///` doc comment when you run `cargo test`?",
+      "options": [
+        "Nothing, it's purely documentation",
+        "It's spell-checked but not compiled",
+        "It's compiled and executed as its own test",
+        "It's only checked when you run `cargo doc`"
+      ],
+      "answer": 2,
+      "explain": "A bare ` ``` ` block inside a doc comment defaults to Rust and is compiled AND run by `cargo test` — a wrong example fails the build, not just the docs."
+    },
+    {
+      "q": "Why can a doc-test only call `pub` items of the crate it documents?",
+      "options": [
+        "rustdoc doesn't support private items in any context",
+        "The example is compiled as if it were external code depending on the crate, the same restriction integration tests have",
+        "Because doc-tests run before compilation finishes",
+        "It's an arbitrary rustdoc limitation with no deeper reason"
+      ],
+      "answer": 1,
+      "explain": "Doc-tests are compiled as standalone programs calling into your crate from the outside, so — like `tests/` integration tests — they only see the public API."
+    },
+    {
+      "q": "What does prefixing a doc-test line with `# ` (hash, space) do?",
+      "options": [
+        "Comments the line out so it's never compiled",
+        "Marks the line as a TODO",
+        "Compiles and runs the line, but hides it from the rendered documentation",
+        "Turns the line into a doc-test title"
+      ],
+      "answer": 2,
+      "explain": "`# `-prefixed lines are still compiled and executed by `cargo test`, they just don't appear in the example a reader sees via `cargo doc`. Handy for hiding setup/imports."
+    },
+    {
+      "q": "What does `std::time::Instant::now()` capture?",
+      "options": [
+        "The current wall-clock date and time",
+        "A monotonic timestamp unaffected by system clock adjustments, meant for measuring elapsed durations",
+        "A random benchmark seed",
+        "The number of CPU cycles used so far"
+      ],
+      "answer": 1,
+      "explain": "`Instant` is designed for measuring elapsed time between two points — it only moves forward, so it isn't thrown off by the system clock being changed."
+    },
+    {
+      "q": "Why shouldn't you trust a single `Instant::now()` / `.elapsed()` measurement as a real benchmark result?",
+      "options": [
+        "Instant is inaccurate by design",
+        "It only measures in whole seconds",
+        "A single run is noisy — CPU scaling, other processes, and cold caches can swing it significantly",
+        "elapsed() requires unsafe code"
+      ],
+      "answer": 2,
+      "explain": "One measurement captures whatever noise happened to be present during that run. It's fine for a rough sanity check, but not for concluding a change made code faster or slower."
+    },
+    {
+      "q": "Does stable Rust have a built-in `cargo bench`?",
+      "options": [
+        "Yes, identical to `cargo test`",
+        "No — the `#[bench]`/`cargo bench` combo is part of the unstable `test` crate, nightly-only",
+        "Yes, but only for library crates",
+        "No, benchmarking isn't possible in Rust at all"
+      ],
+      "answer": 1,
+      "explain": "Built-in benchmarking requires nightly Rust. On stable, the ecosystem standard is the `criterion` crate."
+    },
+    {
+      "q": "What does `criterion` give you that a single `Instant::elapsed()` timing doesn't?",
+      "options": [
+        "Automatic code optimization",
+        "Statistical analysis across many runs, including comparison against the previous run with a confidence interval",
+        "A GUI for editing benchmarks",
+        "The ability to benchmark without compiling the code"
+      ],
+      "answer": 1,
+      "explain": "`criterion` runs your function many times, filters noise statistically, and reports whether a change is a real regression/improvement or just noise — not just a single raw number."
+    },
+    {
+      "q": "What does wrapping a value in `black_box(...)` prevent in a criterion benchmark?",
+      "options": [
+        "It prevents the value from being printed",
+        "It prevents the compiler from optimizing away the computation because it can see the result is unused",
+        "It hides the value from the debugger",
+        "It slows down the benchmark deliberately for accuracy"
+      ],
+      "answer": 1,
+      "explain": "Without `black_box`, the optimizer can notice a computed value is never observably used and delete the whole computation, making the benchmark measure nothing."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What happens to a fenced code block inside a `///` doc comment when `cargo test` runs?",
+      "back": "It's compiled and executed as its own test — a wrong or stale example fails the build, not just the rendered docs."
+    },
+    {
+      "front": "Why can doc-tests only call `pub` items?",
+      "back": "The example is compiled as if it were external code depending on the crate, the same visibility restriction integration tests in `tests/` have."
+    },
+    {
+      "front": "What does a `# `-prefixed line inside a doc-test do?",
+      "back": "It's compiled and run like any other line, but hidden from the rendered documentation — used for setup/imports that would clutter the visible example."
+    },
+    {
+      "front": "What does `Instant::now()` + `.elapsed()` give you?",
+      "back": "Rough, noisy manual timing using std alone — a monotonic timestamp and the Duration since it. Fine for 'is this obviously slow,' not for real comparisons."
+    },
+    {
+      "front": "Does stable Rust have a built-in `cargo bench`?",
+      "back": "No — the `#[bench]`/`cargo bench` pair is part of the unstable `test` crate (nightly-only). Stable Rust uses the `criterion` crate instead."
+    },
+    {
+      "front": "What makes `criterion` more trustworthy than a single `Instant` measurement?",
+      "back": "It runs the function many times, applies statistical analysis to filter noise, and compares each run to the previous one with a confidence interval."
+    },
+    {
+      "front": "What does `black_box` do in a criterion benchmark, and why is it needed?",
+      "back": "It stops the compiler from optimizing away a computation whose result is never observably used — without it you might benchmark nothing at all."
+    },
+    {
+      "front": "How is a `benches/*.rs` criterion file structured, and what does `criterion_main!` do?",
+      "back": "It's its own compiled binary (set via `[[bench]] harness = false` in Cargo.toml); `criterion_group!`/`criterion_main!` generate the `fn main` that runs the registered benchmarks."
+    }
+  ]
+}

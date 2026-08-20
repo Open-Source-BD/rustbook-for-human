@@ -1,0 +1,136 @@
+{
+  "topic": "error-crates-thiserror-and-anyhow",
+  "title": "thiserror and anyhow",
+  "quiz": [
+    {
+      "q": "What problem does `thiserror` solve?",
+      "options": [
+        "It replaces Result with a faster type",
+        "It derives the Display, std::error::Error, and From boilerplate for a custom error enum from attributes",
+        "It makes panics recoverable",
+        "It removes the need for error types entirely"
+      ],
+      "answer": 1,
+      "explain": "#[derive(thiserror::Error)] plus #[error(\"...\")] and #[from] attributes generate the same Display/Error/From impls you'd otherwise write by hand."
+    },
+    {
+      "q": "In `#[derive(thiserror::Error, Debug)] enum ConfigError { #[error(\"missing key: {0}\")] Missing(String), ... }`, what does `#[error(\"missing key: {0}\")]` generate?",
+      "options": [
+        "A From impl for that variant",
+        "The matching arm of the Display implementation for that variant",
+        "A Debug implementation for that variant",
+        "A test case for that variant"
+      ],
+      "answer": 1,
+      "explain": "Each #[error(\"...\")] attribute becomes the Display arm for that variant, with {0} referring to the variant's first field, similar to format!."
+    },
+    {
+      "q": "What does `#[from]` on a variant's field do in a thiserror enum?",
+      "options": [
+        "Nothing, it's just documentation",
+        "Generates a From<SourceType> for MyError impl, so `?` still auto-converts",
+        "Forces the field to be public",
+        "Converts the field to a String automatically"
+      ],
+      "answer": 1,
+      "explain": "#[from] generates the From impl for that field's type, exactly matching what you'd write by hand — that's why ? keeps working without extra code."
+    },
+    {
+      "q": "What is `anyhow::Result<T>` shorthand for?",
+      "options": [
+        "Option<T>", "Result<T, anyhow::Error>", "Result<T, String>", "Box<T>"
+      ],
+      "answer": 1,
+      "explain": "anyhow::Result<T> is defined as Result<T, anyhow::Error> — a catch-all error type that any std::error::Error-implementing type converts into via ?."
+    },
+    {
+      "q": "Why can't you `match` on the specific error variant behind an `anyhow::Error`?",
+      "options": [
+        "You actually can, anyhow preserves the concrete type",
+        "anyhow::Error intentionally type-erases the concrete error — it's built to be propagated and logged, not matched on",
+        "anyhow::Error only stores a String, no structured data at all",
+        "match doesn't work on any Result type"
+      ],
+      "answer": 1,
+      "explain": "anyhow::Error erases the concrete type by design, which is exactly why it's meant for application code that just propagates/logs errors rather than library code whose callers need to distinguish cases."
+    },
+    {
+      "q": "What must be in scope to call `.context(\"...\")` on a Result?",
+      "options": [
+        "Nothing extra, it's always available on Result",
+        "`use anyhow::Context;` — context is a trait method, not an inherent Result method",
+        "The thiserror crate",
+        "A #[derive(Context)] on the error type"
+      ],
+      "answer": 1,
+      "explain": "Context is a trait anyhow provides; without importing it, `.context(...)` doesn't exist on Result and the compiler reports 'no method named context found'."
+    },
+    {
+      "q": "What's the difference between `.context(\"msg\")` and `.with_context(|| \"msg\")`?",
+      "options": [
+        "They're identical, with_context is just deprecated",
+        "with_context's closure only runs (building the message) on the failure path, useful when the message is expensive to construct",
+        "context works on Option, with_context only works on Result",
+        "with_context discards the original error, context keeps it"
+      ],
+      "answer": 1,
+      "explain": "Same relationship as unwrap_or vs unwrap_or_else: .context(...) always evaluates its argument, .with_context(|| ...) only runs the closure when there's actually an error to attach it to."
+    },
+    {
+      "q": "What does `anyhow::ensure!(port <= 65535, \"port {port} is out of range\")` do?",
+      "options": [
+        "Always returns an error",
+        "If the condition is false, returns early with a formatted error — like a fallible assert!",
+        "Panics if the condition is false",
+        "Logs a warning but continues either way"
+      ],
+      "answer": 1,
+      "explain": "ensure!(cond, \"msg\") is equivalent to `if !cond { bail!(\"msg\") }` — it bails out with the given error only when the condition fails."
+    },
+    {
+      "q": "What's the recommended rule of thumb for choosing between thiserror and anyhow?",
+      "options": [
+        "Always use anyhow, everywhere, for everything",
+        "thiserror for libraries (callers need to match specific variants), anyhow for binaries/applications (callers just log or exit)",
+        "thiserror for applications, anyhow for libraries",
+        "Use both crates in every function for maximum flexibility"
+      ],
+      "answer": 1,
+      "explain": "Libraries should expose precise, match-able errors (thiserror); applications typically just want to propagate and report failures with context (anyhow)."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does #[derive(thiserror::Error)] generate for an enum?",
+      "back": "It generates the std::error::Error implementation, and combined with #[error(\"...\")] on each variant, the matching Display implementation too."
+    },
+    {
+      "front": "What does #[from] on a thiserror variant's field do?",
+      "back": "Generates a From<SourceType> for YourErrorType impl for that field's type, so ? still auto-converts without you writing the impl by hand."
+    },
+    {
+      "front": "What is anyhow::Result<T>?",
+      "back": "Shorthand for Result<T, anyhow::Error>. Any type implementing std::error::Error (or a plain string) converts into anyhow::Error via ?, making it a fast catch-all for application code."
+    },
+    {
+      "front": "Why can't you match on the concrete error behind anyhow::Error?",
+      "back": "anyhow::Error intentionally type-erases the original error — it's designed for propagating and logging, not for distinguishing cases. Use thiserror instead if callers need to match."
+    },
+    {
+      "front": "What do you need in scope to use .context(\"...\") on a Result?",
+      "back": "use anyhow::Context; — .context() is a trait method from anyhow::Context, not an inherent method on Result, so it won't compile without the import."
+    },
+    {
+      "front": "context(\"msg\") vs with_context(|| \"msg\") — when to use which?",
+      "back": "context(\"msg\") always builds the message eagerly. with_context(|| \"msg\") only runs the closure on the failure path — use it when the message is expensive to construct or needs computed data."
+    },
+    {
+      "front": "What do anyhow::bail! and anyhow::ensure! do?",
+      "back": "bail!(\"msg\") returns early with a formatted error immediately. ensure!(cond, \"msg\") is a fallible assert!: bails with that error only if cond is false."
+    },
+    {
+      "front": "Rule of thumb: thiserror vs anyhow?",
+      "back": "thiserror for libraries — callers need to match on specific error variants. anyhow for binaries/application code — callers just want to propagate, log, or exit on any failure."
+    }
+  ]
+}
