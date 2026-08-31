@@ -162,6 +162,73 @@ Press Run. You'll see one success and one failure — exactly the two paths real
 - **Assuming a path is relative to your source file.** File paths are relative to where the program
   is *run from* (the working directory), not where the `.rs` file lives. This trips up everyone once.
 
+## More examples
+
+### Counting lines in a server access log
+Log files are read far more often than they're parsed structurally — `.lines().count()` answers "how many requests came in" without building anything fancier.
+
+```rust
+// Needs a real filesystem — run in a cargo project.
+use std::fs;
+
+fn main() {
+    let text = fs::read_to_string("access.log").expect("could not read access.log");
+    let line_count = text.lines().count();
+    println!("access.log has {line_count} entries");
+}
+```
+
+### Backing up a save file before overwriting it
+A game that's about to write new save data first wants a safety copy — `fs::copy` duplicates a file in one call instead of a manual read-then-write.
+
+```rust
+// Needs a real filesystem — run in a cargo project.
+use std::fs;
+
+fn main() {
+    fs::copy("save.dat", "save.dat.bak")
+        .expect("could not back up save.dat");
+    println!("backup written to save.dat.bak");
+}
+```
+
+### Refusing to clobber an existing export file
+A "generate report" button that silently overwrites yesterday's export is a bug waiting to be reported — checking `Path::exists()` first lets the program refuse instead of destroying data.
+
+```rust
+// Needs a real filesystem — run in a cargo project.
+use std::fs;
+use std::path::Path;
+
+fn main() {
+    let path = "report.csv";
+    if Path::new(path).exists() {
+        println!("refusing to overwrite {path} — it already exists");
+    } else {
+        fs::write(path, "id,total\n").expect("could not create report.csv");
+        println!("wrote a fresh {path}");
+    }
+}
+```
+
+### Cleaning up a temp file after a batch job
+A batch job that writes intermediate scratch data shouldn't leave it lying around when it's done — `fs::remove_file` deletes it explicitly instead of hoping the OS cleans up.
+
+```rust
+// Needs a real filesystem — run in a cargo project.
+use std::fs;
+
+fn main() {
+    let tmp_path = "batch_job.tmp";
+    fs::write(tmp_path, "intermediate data").expect("could not write temp file");
+
+    // ... batch job would read/process the temp file here ...
+
+    fs::remove_file(tmp_path).expect("could not remove temp file");
+    println!("cleaned up {tmp_path}");
+}
+```
+
 ## Your turn
 
 This is a "spot the bug" exercise (file I/O can't run on the Playground). The function below is

@@ -98,6 +98,79 @@ You don't need `const` often as a beginner. Just recognize it when you see it: "
 - **Adding `mut` you never use.** If you write `let mut x = 5;` but never change `x`, Rust warns: *"variable does not need to be mutable."* Drop the `mut`. It's a hint that your intent and your code disagree.
 - **Confusing `const` and `let`.** `const` needs an uppercase name and an explicit type, and can't use `mut`. If you try `const x = 5;` you'll get an error asking for the type.
 
+## More examples
+
+### Running total for a shopping cart
+Ringing up items one at a time means the total genuinely changes as you go — a textbook job for `mut`.
+
+```rust,editable
+fn main() {
+    let mut cart_total = 0.0;
+    cart_total += 12.99;
+    cart_total += 4.50;
+    cart_total += 7.25;
+    println!("cart total: ${cart_total:.2}");
+}
+```
+
+### Shadowing to convert units step by step
+User input arrives as text, but you need a number, and then you need it in a different unit. Shadowing lets you reuse one name as the value transforms.
+
+```rust,editable
+fn main() {
+    let temp = "98.6"; // raw input, as text
+    let temp: f64 = temp.parse().unwrap(); // now a number
+    let temp = (temp - 32.0) * 5.0 / 9.0;  // now Celsius
+    println!("{temp:.1}C");
+}
+```
+
+### A `const` for app-wide config
+Things like a retry limit or a max file size don't change while the program runs, and every function that needs them should agree on the same value — that's what `const` is for.
+
+```rust,editable
+const MAX_LOGIN_ATTEMPTS: u32 = 3;
+
+fn main() {
+    let mut attempts = 0;
+    while attempts < MAX_LOGIN_ATTEMPTS {
+        attempts += 1;
+        println!("attempt {attempts} of {MAX_LOGIN_ATTEMPTS}");
+    }
+    println!("locked out");
+}
+```
+
+### Why swapping needs a temporary variable
+If you write `a = b; b = a;`, the first line already overwrote `a`, so the second line just copies `b` back into itself. You need somewhere to stash the original value first.
+
+```rust,editable
+fn main() {
+    let mut a = "left";
+    let mut b = "right";
+
+    let temp = a;   // hold a's value before it's overwritten
+    a = b;
+    b = temp;
+
+    println!("a={a}, b={b}");
+}
+```
+
+### Shadowing only lasts inside its block
+A shadowed name doesn't leak out of the `{ }` it was created in — once the block ends, the outer variable is back, untouched.
+
+```rust,editable
+fn main() {
+    let status = "pending";
+    {
+        let status = "approved"; // only shadows inside this block
+        println!("inside: {status}");
+    }
+    println!("outside: {status}"); // original still stands
+}
+```
+
 ## Your turn
 
 This program wants to count up to 3, then relabel the result as a message. It's broken in two places. Fix it so it prints the count going `1, 2, 3` and then a final line. Press ▶ Run.

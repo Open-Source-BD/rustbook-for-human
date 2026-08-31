@@ -149,6 +149,126 @@ fn main() {
 - **Locking the same `Mutex` twice on one thread** (e.g. a helper function locks it again while you're still holding the outer guard) — you deadlock against yourself, waiting for a lock only you hold.
 - **Forgetting `.lock()` returns a `Result`.** `.unwrap()` is fine for lessons and quick scripts; production code sometimes needs to handle a poisoned mutex instead of panicking.
 
+## More examples
+
+### Collecting log lines from parallel workers
+A batch job that fans out across worker threads still needs one combined log — a `Mutex`-protected `Vec` lets every worker append its own line without stepping on the others.
+
+```rust,editable
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let mut handles = vec![];
+
+    for worker_id in 0..4 {
+        let log = Arc::clone(&log);
+        handles.push(thread::spawn(move || {
+            let line = format!("worker {worker_id} finished its batch");
+            log.lock().unwrap().push(line);
+        }));
+    }
+
+    for h in handles {
+        h.join().unwrap();
+    }
+
+    let log = log.lock().unwrap();
+    println!("collected {} log lines:", log.len()); // 4
+    for line in log.iter() {
+        println!("{line}"); // order varies between runs — each worker finishes independently
+    }
+}
+```
+
+### Tracking a game's high score across players
+Several players' threads all race to update the same leaderboard entry — locking the mutex before comparing keeps the "is this actually higher?" check and the update from being interrupted mid-way.
+
+```rust,editable
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let high_score = Arc::new(Mutex::new(0));
+    let scores = [42, 108, 77, 95];
+    let mut handles = vec![];
+
+    for score in scores {
+        let high_score = Arc::clone(&high_score);
+        handles.push(thread::spawn(move || {
+            let mut best = high_score.lock().unwrap();
+            if score > *best {
+                *best = score;
+            }
+        }));
+    }
+
+    for h in handles {
+        h.join().unwrap();
+    }
+
+    println!("high score: {}", *high_score.lock().unwrap()); // 108
+}
+```
+
+### A memoization cache shared by worker threads
+An expensive lookup only needs to run once per key — a `HashMap` behind a `Mutex` lets every thread check (and fill) the same cache instead of each keeping its own.
+
+```rust,editable
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let cache: Arc<Mutex<HashMap<u32, u32>>> = Arc::new(Mutex::new(HashMap::new()));
+    let mut handles = vec![];
+
+    for id in [1, 2, 1, 3, 2] {
+        let cache = Arc::clone(&cache);
+        handles.push(thread::spawn(move || {
+            let mut cache = cache.lock().unwrap();
+            cache.entry(id).or_insert_with(|| id * 100);
+        }));
+    }
+
+    for h in handles {
+        h.join().unwrap();
+    }
+
+    let cache = cache.lock().unwrap();
+    println!("cached {} unique entries", cache.len()); // 3
+}
+```
+
+### A shared bank balance receiving concurrent deposits
+Every deposit thread needs to add its amount to the *same* balance — the lock makes each addition atomic, so five concurrent deposits add up exactly, never lose one to a race.
+
+```rust,editable
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let balance = Arc::new(Mutex::new(0));
+    let deposits = [50, 20, 100, 30, 75];
+    let mut handles = vec![];
+
+    for amount in deposits {
+        let balance = Arc::clone(&balance);
+        handles.push(thread::spawn(move || {
+            let mut balance = balance.lock().unwrap();
+            *balance += amount;
+        }));
+    }
+
+    for h in handles {
+        h.join().unwrap();
+    }
+
+    println!("final balance: {}", *balance.lock().unwrap()); // 275
+}
+```
+
 ## Your turn
 
 This program tries to have five threads increment a shared counter. It doesn't compile.

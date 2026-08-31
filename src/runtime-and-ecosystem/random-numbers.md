@@ -16,7 +16,7 @@ cargo add rand
 
 ```rust
 // rand is an external crate — add it first (above), then run in a real project.
-use rand::Rng;
+use rand::RngExt;
 
 fn main() {
     let mut rng = rand::rng(); // the default thread-local generator
@@ -29,14 +29,14 @@ fn main() {
 }
 ```
 
-`rand::rng()` hands you the default, thread-local random number generator — reach for it first; it's fast, and good enough for games, sampling, and everyday randomness. `.random_range(1..=6)` needs the `Rng` trait in scope (`use rand::Rng;`) because `random_range` and `random` are trait methods, not inherent ones. Notice the range is `1..=6`, with `..=` — an *inclusive* range, so a real six-sided die can actually roll a 6. A plain `1..6` would only ever produce 1 through 5.
+`rand::rng()` hands you the default, thread-local random number generator — reach for it first; it's fast, and good enough for games, sampling, and everyday randomness. `.random_range(1..=6)` needs the `RngExt` trait in scope (`use rand::RngExt;`) because `random_range` and `random` are trait methods, not inherent ones. Notice the range is `1..=6`, with `..=` — an *inclusive* range, so a real six-sided die can actually roll a 6. A plain `1..6` would only ever produce 1 through 5.
 
-### Picking and shuffling — bring `SliceRandom` into scope
+### Picking and shuffling — bring `IndexedRandom`/`SliceRandom` into scope
 
-Random-ness on a `&[T]` slice — picking one random element, or shuffling the whole thing in place — lives behind a *different* trait, `rand::seq::SliceRandom`. Without it imported, `.choose()` and `.shuffle()` simply don't exist on your slice as far as the compiler is concerned.
+Random-ness on a `&[T]` slice — picking one random element, or shuffling the whole thing in place — lives behind two *different* traits: `rand::seq::IndexedRandom` for `.choose()`, and `rand::seq::SliceRandom` for `.shuffle()`. Without both imported, the compiler says those methods simply don't exist on your slice.
 
 ```rust
-use rand::seq::SliceRandom;
+use rand::seq::{IndexedRandom, SliceRandom};
 
 fn main() {
     let mut rng = rand::rng();
@@ -59,7 +59,7 @@ fn main() {
 The default `rand::rng()` is intentionally unpredictable — every run gives a different sequence, which is exactly what you want for an actual game. But sometimes you want the *opposite*: a test that always rolls the same "random" numbers so it's not flaky, or a simulation you can re-run and get identical output to compare against. For that, seed a specific generator instead of using the default one:
 
 ```rust
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use rand::rngs::StdRng;
 
 fn main() {
@@ -73,11 +73,84 @@ fn main() {
 
 ## Common mistakes
 
-- **Forgetting to import `rand::seq::SliceRandom`.** `.choose()` and `.shuffle()` live on that trait, not directly on slices — without `use rand::seq::SliceRandom;`, the compiler says something like `no method named \`choose\` found for reference \`&[...]\``.
+- **Forgetting to import `rand::seq::IndexedRandom` or `SliceRandom`.** `.choose()` lives on `IndexedRandom`, `.shuffle()` lives on `SliceRandom` — neither is directly on slices, so without the right one imported the compiler says something like `no method named \`choose\` found for reference \`&[...]\``.
 - **Using a half-open range where you meant inclusive.** `rng.random_range(1..6)` can never produce `6` — for "a die roll from 1 to 6" or "a random index up to and including the last element," you almost always want `..=`.
 - **Assuming the default RNG is safe for security-sensitive randomness.** `rand::rng()`'s default algorithm is built for speed and statistical quality, not guaranteed unpredictability against an attacker — check `rand`'s docs (and consider a CSPRNG) before generating tokens, session ids, or anything security-relevant.
 - **Using the default thread RNG in a test that needs to be deterministic.** A test built on `rand::rng()` can pass locally and flake in CI (or vice versa) purely from which random values it happened to draw — seed a `StdRng` in tests instead.
 - **Calling `.choose()` on a possibly-empty slice and immediately `.unwrap()`-ing.** It returns `Option<&T>` specifically because an empty slice has nothing to choose — handle the `None` case, or make sure emptiness is actually impossible first.
+
+## More examples
+
+### Weighted loot drops in a game
+Not every drop should be equally likely — `choose_weighted` picks an item where higher-weighted entries (like a common sword over a legendary gem) come up more often.
+
+```rust
+use rand::seq::IndexedRandom;
+
+fn main() {
+    let mut rng = rand::rng();
+
+    let loot = [("common sword", 60), ("rare shield", 30), ("legendary gem", 10)];
+
+    if let Ok((item, _weight)) = loot.choose_weighted(&mut rng, |entry| entry.1) {
+        println!("dropped: {item}");
+    }
+}
+```
+
+### Generating a random invite code
+Sampling random alphanumeric characters and collecting them into a `String` is the whole recipe for a one-time invite or coupon code.
+
+```rust
+use rand::RngExt;
+use rand::distr::Alphanumeric;
+
+fn main() {
+    let rng = rand::rng();
+
+    let invite_code: String = rng
+        .sample_iter(&Alphanumeric)
+        .take(8)
+        .map(char::from)
+        .collect();
+
+    println!("your invite code: {invite_code}");
+}
+```
+
+### Randomly assigning users to an A/B test bucket
+`random_bool(p)` flips a weighted coin — perfect for rolling out a new checkout flow to a fixed percentage of users instead of a plain 50/50 split.
+
+```rust
+use rand::RngExt;
+
+fn main() {
+    let mut rng = rand::rng();
+
+    // 20% of users see the new checkout flow, 80% see the old one.
+    let in_new_checkout = rng.random_bool(0.2);
+    println!("new checkout flow: {in_new_checkout}");
+}
+```
+
+### Generating a random accent color
+Three independent `random_range` calls, one per RGB channel, are enough to generate a fresh accent color for a UI theme.
+
+```rust
+use rand::RngExt;
+
+fn main() {
+    let mut rng = rand::rng();
+
+    let (r, g, b): (u8, u8, u8) = (
+        rng.random_range(0..=255),
+        rng.random_range(0..=255),
+        rng.random_range(0..=255),
+    );
+
+    println!("accent color: #{r:02X}{g:02X}{b:02X}");
+}
+```
 
 ## Your turn
 

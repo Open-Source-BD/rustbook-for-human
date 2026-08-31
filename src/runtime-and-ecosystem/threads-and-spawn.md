@@ -126,6 +126,126 @@ Press Run. You'll see Rust's usual panic message printed (that's the runtime rep
 - **`.join().unwrap()` on a thread that might legitimately panic.** That turns "one worker failed" into "the thread that's waiting for it also panics." Match on the `Err` explicitly if a failure shouldn't be fatal.
 - **Spawning a thread per tiny unit of work.** Each OS thread has real overhead (its own stack, kernel bookkeeping). For lots of small, short-lived tasks, reach for a thread pool (e.g. the `rayon` crate) instead of spawning thousands of threads.
 
+## More examples
+
+### Resizing a batch of images in parallel
+Resizing a batch of images is naturally parallel — spawn one thread per image and collect every resized name once all threads finish.
+
+```rust,editable
+use std::thread;
+
+fn resize(name: &str) -> String {
+    format!("{name}-resized")
+}
+
+fn main() {
+    let images = vec!["cat.png", "dog.png", "bird.png"];
+    let mut handles = vec![];
+
+    for image in images {
+        handles.push(thread::spawn(move || resize(image)));
+    }
+
+    let mut results: Vec<String> = handles
+        .into_iter()
+        .map(|h| h.join().unwrap())
+        .collect();
+
+    results.sort(); // sort so the printed order doesn't depend on thread timing
+    println!("{:?}", results);
+}
+```
+
+### Summing a huge dataset with a map-reduce split
+Summing a huge dataset is faster split across threads — divide the numbers into chunks, sum each chunk on its own thread, then add the partial totals together.
+
+```rust,editable
+use std::thread;
+
+fn main() {
+    let numbers: Vec<i32> = (1..=100).collect();
+    let chunk_size = 25;
+    let mut handles = vec![];
+
+    for chunk in numbers.chunks(chunk_size) {
+        let chunk = chunk.to_vec(); // owned copy so the thread doesn't borrow `numbers`
+        handles.push(thread::spawn(move || chunk.iter().sum::<i32>()));
+    }
+
+    let total: i32 = handles.into_iter().map(|h| h.join().unwrap()).sum();
+    println!("total: {total}"); // 5050
+}
+```
+
+### Health-checking several servers at once
+Health-checking five servers one at a time wastes most of the time waiting — spawning one thread per server runs all the checks concurrently instead.
+
+```rust,editable
+use std::thread;
+
+fn check_server(name: &str) -> (String, bool) {
+    // pretend this pings the server
+    (name.to_string(), name != "db-3")
+}
+
+fn main() {
+    let servers = vec!["web-1", "web-2", "db-3", "cache-4"];
+    let mut handles = vec![];
+
+    for server in servers {
+        handles.push(thread::spawn(move || check_server(server)));
+    }
+
+    let mut results: Vec<(String, bool)> = handles
+        .into_iter()
+        .map(|h| h.join().unwrap())
+        .collect();
+
+    results.sort();
+    for (name, healthy) in &results {
+        println!("{name}: {}", if *healthy { "up" } else { "down" });
+    }
+}
+```
+
+### A batch job that survives one bad input
+A batch of independent jobs shouldn't all fail just because one input is bad — join each handle individually so one panicking thread doesn't stop you from checking the rest.
+
+```rust,editable
+use std::thread;
+
+fn process(id: i32) -> i32 {
+    if id == 3 {
+        panic!("bad input at id {id}");
+    }
+    id * 10
+}
+
+fn main() {
+    let mut handles = vec![];
+    for id in 1..=5 {
+        handles.push(thread::spawn(move || process(id)));
+    }
+
+    let mut succeeded = 0;
+    let mut failed = 0;
+    for h in handles {
+        match h.join() {
+            Ok(value) => {
+                succeeded += 1;
+                println!("job finished: {value}");
+            }
+            Err(_) => {
+                failed += 1;
+                println!("a job panicked");
+            }
+        }
+    }
+
+    println!("{succeeded} succeeded, {failed} failed"); // 4 succeeded, 1 failed
+}
+```
+
 ## Your turn
 
 This program sums a vector on a worker thread and prints the total. It has two bugs — the closure can't see `numbers`, and the final `println!` doesn't do what it looks like.

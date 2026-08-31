@@ -133,6 +133,84 @@ The `|` lets one arm cover multiple patterns, and `x if x > 100` only fires when
 - **Using `match` when `if let` reads better (or vice versa).** A `match` with one real arm and a `_ => ()` is usually clearer as `if let`. Conversely, chaining many `if let`s where a single `match` would do makes code harder to follow.
 - **Forgetting patterns bind *new* names.** In `Some(n)`, `n` is a fresh name capturing the inner value — it does not compare against an existing variable called `n`. This surprises people who expect it to mean "match only if equal to `n`."
 
+## More examples
+
+### Reading an HTTP status code
+A web client needs to turn a raw status number into a human-readable category, and a range pattern like `500..=599` covers a whole band of codes in one arm.
+
+```rust,editable
+fn describe_status(code: u16) -> &'static str {
+    match code {
+        200 => "OK",
+        404 => "Not Found",
+        500..=599 => "Server Error",
+        _ => "Unknown",
+    }
+}
+
+fn main() {
+    println!("{}", describe_status(200));
+    println!("{}", describe_status(503));
+    println!("{}", describe_status(999));
+}
+```
+
+### Locating a point on a graph
+Plotting software needs to classify a coordinate by which quadrant it falls in, and guards let each arm add its own condition on top of the tuple pattern.
+
+```rust,editable
+fn quadrant(point: (i32, i32)) -> &'static str {
+    match point {
+        (0, 0) => "origin",
+        (x, 0) if x > 0 => "positive x-axis",
+        (x, y) if x > 0 && y > 0 => "quadrant I",
+        (x, y) if x < 0 && y > 0 => "quadrant II",
+        _ => "elsewhere",
+    }
+}
+
+fn main() {
+    println!("{}", quadrant((0, 0)));
+    println!("{}", quadrant((3, 4)));
+    println!("{}", quadrant((-2, 5)));
+}
+```
+
+### Applying an optional coupon code
+A checkout flow only needs to handle "there's a coupon" — `if let` skips the ceremony of a full `match` when the fallback is just "charge full price."
+
+```rust,editable
+fn apply_discount(price: f64, coupon: Option<u32>) -> f64 {
+    if let Some(percent) = coupon {
+        price - (price * percent as f64 / 100.0)
+    } else {
+        price
+    }
+}
+
+fn main() {
+    println!("{:.2}", apply_discount(100.0, Some(20)));
+    println!("{:.2}", apply_discount(100.0, None));
+}
+```
+
+### Tagging log lines by severity
+A log viewer destructures each `(level, message)` entry with a `for` loop, then matches on the level to decide how to display it.
+
+```rust,editable
+fn main() {
+    let entries = vec![("ERROR", "disk full"), ("INFO", "server started"), ("WARN", "low memory")];
+
+    for (level, message) in &entries {
+        match *level {
+            "ERROR" => println!("[ERROR] {message}"),
+            "WARN" => println!("[WARN] {message}"),
+            _ => println!("[INFO] {message}"),
+        }
+    }
+}
+```
+
 ## Your turn
 
 This program should describe an `Option`, but it won't compile. The `match` is missing a case, and one arm tries to reach into the value the wrong way. Fix it. Press ▶ Run.

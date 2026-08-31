@@ -108,6 +108,92 @@ You don't need to understand this fully yet. Just tuck away the idea: **document
 - **Letting comments drift out of date.** A comment that describes old behavior is worse than none, because it misleads. When you change code, check the comment above it.
 - **Over-commenting simple code.** If a function is clear, it doesn't need a paragraph. Save the words for the parts that genuinely need explaining.
 
+## More examples
+
+### A doc comment with a tested `# Examples` section
+Showing a worked example right in the docs is one of the most useful things you can write — readers see real input and output without leaving the page.
+
+```rust,editable
+/// Converts a Celsius temperature to Fahrenheit.
+///
+/// # Examples
+///
+/// ```
+/// let f = temp::celsius_to_fahrenheit(0.0);
+/// assert_eq!(f, 32.0);
+/// ```
+pub fn celsius_to_fahrenheit(c: f64) -> f64 {
+    c * 9.0 / 5.0 + 32.0
+}
+
+fn main() {
+    println!("{}", celsius_to_fahrenheit(100.0));
+}
+```
+
+### A `//!` comment describing the whole module
+At the very top of a file, `//!` describes the file itself rather than the item below it — the first thing a reader (or `cargo doc`) sees when they open that module.
+
+```rust,editable
+//! Utilities for working with shopping cart totals.
+//!
+//! This module has no real submodules here — in a real project
+//! this comment would sit at the top of `cart.rs`.
+
+fn main() {
+    println!("see the module doc comment above");
+}
+```
+
+### The `TODO`/`FIXME` convention
+These aren't special to Rust — they're just an ordinary comment with a keyword teams agree to grep for, so unfinished work doesn't get lost.
+
+```rust,editable
+fn main() {
+    let mut price = 19.99;
+    // TODO: apply loyalty discount once the rules are finalized
+    // FIXME: this doesn't yet handle negative quantities
+    price *= 1.0;
+    println!("price: {price}");
+}
+```
+
+### A doc comment on a struct field
+Fields can carry their own `///` comment too, so `cargo doc` explains not just what a struct *is*, but what each piece of data inside it *means*.
+
+```rust,editable
+/// A single row in the user table.
+struct User {
+    /// The user's display name, shown in the UI.
+    name: String,
+    /// Account age in days since signup.
+    age_days: u32,
+}
+
+fn main() {
+    let u = User { name: String::from("Ada"), age_days: 42 };
+    println!("{} has been here {} days", u.name, u.age_days);
+}
+```
+
+### A `# Panics` section warning readers up front
+Doc comments have other conventional sections besides `# Examples`. `# Panics` tells callers exactly which inputs will crash the program, before they find out the hard way.
+
+```rust,editable
+/// Divides two numbers.
+///
+/// # Panics
+///
+/// Panics if `divisor` is zero.
+pub fn divide(n: i32, divisor: i32) -> i32 {
+    n / divisor
+}
+
+fn main() {
+    println!("{}", divide(10, 2));
+}
+```
+
 ## Your turn
 
 This code wants a *doc* comment on the public function so it shows up in `cargo doc`, but it's using the wrong comment style, and the doc comment is in the wrong place. Fix it so the description properly documents `greeting`. Press ▶ Run.

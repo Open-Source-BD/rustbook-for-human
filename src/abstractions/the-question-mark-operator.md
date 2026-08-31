@@ -117,6 +117,103 @@ fn main() -> Result<(), std::num::ParseIntError> {
 - **Using `?` across two error types with no `From` impl between them.** If your function returns `Result<T, ParseIntError>` but you `?` on something that fails with `std::io::Error`, the compiler can't find a conversion and refuses to build. Either widen the return type (e.g. to `Box<dyn Error>`), or write the `From` impl yourself (next lesson).
 - **Expecting `?` to work in a closure the same way it does in the enclosing function.** `?` returns from the *nearest* enclosing function — inside a closure, that's the closure, not `main`. If the closure's return type isn't `Result`/`Option` too, it won't compile.
 
+## More examples
+
+### Chain three fallible steps in one function
+Real functions rarely stop at one `?` — computing an order total might mean parsing a quantity, a price, and a tax figure, each of which can fail on its own.
+
+```rust,editable
+use std::num::ParseIntError;
+
+fn total_cost(qty_text: &str, price_text: &str, tax_text: &str) -> Result<i32, ParseIntError> {
+    let qty: i32 = qty_text.parse()?;     // step 1
+    let price: i32 = price_text.parse()?; // step 2
+    let tax: i32 = tax_text.parse()?;     // step 3
+    Ok(qty * price + tax)
+}
+
+fn main() {
+    println!("{:?}", total_cost("3", "20", "5"));   // Ok(65)
+    println!("{:?}", total_cost("3", "oops", "5")); // Err(...)
+}
+```
+
+### Convert a library error into your own error type
+Instead of erasing everything into `Box<dyn Error>`, a small app-specific error enum with a `From` impl lets `?` convert automatically while keeping a concrete, matchable type.
+
+```rust,editable
+use std::num::ParseIntError;
+
+#[derive(Debug)]
+enum ConfigError {
+    BadNumber(ParseIntError),
+}
+
+impl From<ParseIntError> for ConfigError {
+    fn from(e: ParseIntError) -> Self {
+        ConfigError::BadNumber(e)
+    }
+}
+
+fn read_port(text: &str) -> Result<i32, ConfigError> {
+    let port: i32 = text.parse()?; // ParseIntError auto-converts via From
+    Ok(port)
+}
+
+fn main() {
+    println!("{:?}", read_port("8080")); // Ok(8080)
+    println!("{:?}", read_port("nope")); // Err(BadNumber(...))
+}
+```
+
+### `?` inside a helper, called from `main`
+A helper function's `Result` doesn't stop at its own boundary — call it with `?` from another `Result`-returning function, including `main` itself.
+
+```rust,editable
+fn parse_pair(a: &str, b: &str) -> Result<(i32, i32), std::num::ParseIntError> {
+    Ok((a.parse()?, b.parse()?))
+}
+
+fn main() -> Result<(), std::num::ParseIntError> {
+    let (x, y) = parse_pair("4", "5")?; // helper's Result propagates into main
+    println!("sum: {}", x + y);
+    Ok(())
+}
+```
+
+### `?` on an `Option`, inside a function returning `Option`
+Extracting a filename's extension is a classic "might not exist" lookup — `?` on `Option` bails out cleanly the moment there's nothing to find.
+
+```rust,editable
+fn file_extension(name: &str) -> Option<&str> {
+    let dot_index = name.rfind('.')?; // None if there's no dot at all
+    Some(&name[dot_index + 1..])
+}
+
+fn main() {
+    println!("{:?}", file_extension("report.pdf")); // Some("pdf")
+    println!("{:?}", file_extension("README"));      // None
+}
+```
+
+### Stop a batch job at the first bad value
+Inside a loop, `?` still bails out of the *whole function* on the first failure — handy for validating a batch of input where one bad value should stop everything.
+
+```rust,editable
+fn parse_all(values: &[&str]) -> Result<Vec<i32>, std::num::ParseIntError> {
+    let mut out = Vec::new();
+    for v in values {
+        out.push(v.parse::<i32>()?); // bails out of the whole function on the first bad value
+    }
+    Ok(out)
+}
+
+fn main() {
+    println!("{:?}", parse_all(&["1", "2", "3"]));      // Ok([1, 2, 3])
+    println!("{:?}", parse_all(&["1", "oops", "3"]));   // Err(...)
+}
+```
+
 ## Your turn
 
 This function should read a `PORT` environment variable and parse it as a number, but it doesn't compile.

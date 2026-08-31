@@ -117,6 +117,113 @@ Notice how `match` both *branches* on which variant it is and *unpacks* the data
 - **Overusing structs where an enum fits.** If you find yourself with a "type" field and a pile of fields that are only sometimes filled in, that's an enum trying to be born. Enums make "one of these shapes" explicit and safe.
 - **Non-exhaustive `match`.** When you match an enum, you must handle every variant (or use `_` for the rest). Miss one and the compiler stops you — a feature that catches bugs when you add a new variant later.
 
+## More examples
+
+### A vending machine's possible states
+The machine is always in exactly one state, and only `Dispensing` needs extra data — a perfect fit for an enum where each variant carries its own shape of information.
+
+```rust,editable
+enum VendingState {
+    Idle,
+    Dispensing(String),
+    OutOfStock,
+}
+
+fn status_message(state: VendingState) -> String {
+    match state {
+        VendingState::Idle => String::from("insert coin to start"),
+        VendingState::Dispensing(item) => format!("dispensing {}", item),
+        VendingState::OutOfStock => String::from("sold out, please choose another item"),
+    }
+}
+
+fn main() {
+    println!("{}", status_message(VendingState::Idle));
+    println!("{}", status_message(VendingState::Dispensing(String::from("chips"))));
+    println!("{}", status_message(VendingState::OutOfStock));
+}
+```
+
+### Cycling a traffic light through its phases
+A `match` that returns a different variant for each input turns an enum into a tiny state machine — calling `.next()` repeatedly cycles the light through its phases forever.
+
+```rust,editable
+#[derive(Debug)]
+enum TrafficLight {
+    Red,
+    Yellow,
+    Green,
+}
+
+impl TrafficLight {
+    fn next(self) -> TrafficLight {
+        match self {
+            TrafficLight::Red => TrafficLight::Green,
+            TrafficLight::Green => TrafficLight::Yellow,
+            TrafficLight::Yellow => TrafficLight::Red,
+        }
+    }
+}
+
+fn main() {
+    let mut light = TrafficLight::Red;
+    for _ in 0..4 {
+        println!("{:?}", light);
+        light = light.next();
+    }
+}
+```
+
+### Parsing command-line arguments
+A CLI's set of valid commands is naturally "one of a few options, one of which carries an argument" — exactly what an enum with a data-carrying variant like `Run(String)` was built for.
+
+```rust,editable
+enum Command {
+    Help,
+    Version,
+    Run(String),
+}
+
+fn execute(cmd: Command) {
+    match cmd {
+        Command::Help => println!("usage: app [help|version|run <task>]"),
+        Command::Version => println!("app v1.0.0"),
+        Command::Run(task) => println!("running task: {}", task),
+    }
+}
+
+fn main() {
+    execute(Command::Help);
+    execute(Command::Version);
+    execute(Command::Run(String::from("build")));
+}
+```
+
+### Guarding against division by zero
+Returning `Option<f64>` instead of a plain `f64` forces every caller to confront the "what if `b` is zero" case at compile time, instead of letting it crash or produce `inf` silently.
+
+```rust,editable
+fn safe_divide(a: f64, b: f64) -> Option<f64> {
+    if b == 0.0 {
+        None
+    } else {
+        Some(a / b)
+    }
+}
+
+fn main() {
+    match safe_divide(10.0, 2.0) {
+        Some(result) => println!("10 / 2 = {}", result),
+        None => println!("cannot divide by zero"),
+    }
+
+    match safe_divide(5.0, 0.0) {
+        Some(result) => println!("5 / 0 = {}", result),
+        None => println!("cannot divide by zero"),
+    }
+}
+```
+
 ## Your turn
 
 This program models a coin and tries to get its value, but it won't compile. The variant is referenced without its enum name, and one variant is missing from the match. Fix it. Press ▶ Run.

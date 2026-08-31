@@ -108,6 +108,76 @@ Notice the shape: `#[derive(Deserialize)]` teaches `toml::from_str` how to turn 
 - **Using bare `.unwrap()` on a required env var.** It crashes with `called \`Result::unwrap()\` on an \`Err\` value: NotPresent` — technically correct but useless at 2am. `.expect("DATABASE_URL must be set")` tells you exactly what to fix.
 - **Reaching for a dozen loose `env::var` calls instead of one config struct.** Once you have more than two or three related settings, a `#[derive(Deserialize)]` struct is easier to validate, document, and pass around than scattered string lookups.
 
+## More examples
+
+### Switching log verbosity between dev and prod
+A CLI tool that behaves the same everywhere is annoying to debug locally and noisy in production — reading one `APP_ENV` variable lets the same binary do both.
+
+```rust,editable
+fn main() {
+    let mode = std::env::var("APP_ENV").unwrap_or_else(|_| "development".into());
+
+    match mode.as_str() {
+        "production" => println!("[prod] starting with minimal logging"),
+        "staging" => println!("[staging] starting with verbose logging"),
+        _ => println!("[dev] starting with debug logging enabled"),
+    }
+}
+```
+
+### Enabling a hidden debug overlay in a game
+Some flags don't need a value at all — checking `.is_ok()` instead of reading the value turns "does this variable exist" into a simple on/off switch for a debug overlay.
+
+```rust,editable
+fn main() {
+    let hitboxes_on = std::env::var("DEBUG_HITBOXES").is_ok();
+
+    if hitboxes_on {
+        println!("rendering hitbox outlines for every sprite");
+    } else {
+        println!("normal rendering — no debug overlay");
+    }
+}
+```
+
+### Loading SMTP credentials for an email worker
+A background worker that sends mail needs real credentials in production but fake ones on your laptop — `dotenvy` fills in the fake ones from `.env` without touching how the worker reads them.
+
+```rust
+// dotenvy is an external crate — cargo add dotenvy, then run in a real project.
+use std::env;
+
+fn main() {
+    dotenvy::dotenv().ok();
+
+    let host = env::var("SMTP_HOST").expect("SMTP_HOST must be set — check your .env file");
+    let user = env::var("SMTP_USER").expect("SMTP_USER must be set — check your .env file");
+
+    println!("connecting to {host} as {user}");
+}
+```
+
+### Configuring a game server from a TOML file
+A multiplayer server has too many related settings for loose env vars — deserializing a `server.toml` straight into a struct catches a bad `tick_rate` at startup instead of mid-match.
+
+```rust
+// serde + toml are external crates — cargo add serde --features derive, cargo add toml.
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct ServerConfig {
+    max_players: u32,
+    tick_rate: f32,
+    region: String,
+}
+
+fn main() {
+    let text = std::fs::read_to_string("server.toml").expect("could not read server.toml");
+    let config: ServerConfig = toml::from_str(&text).expect("server.toml is not valid");
+    println!("{config:?}");
+}
+```
+
 ## Your turn
 
 This function is supposed to read `PORT` from the environment, falling back to `8080` if it's missing — but it doesn't compile. Find the bug before checking the solution.

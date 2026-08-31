@@ -94,6 +94,137 @@ pub fn main() {
 - **Passing large or complex data across the JS/Rust boundary casually.** Each call across the boundary has real conversion cost; for big payloads, prefer typed arrays or a crate like `serde-wasm-bindgen` over many small calls.
 - **Using the wrong `--target` with `wasm-pack build`.** `--target web` produces an ES module you initialize yourself; the default `--target bundler` assumes a bundler like webpack is doing that step. Mixing them up breaks the import style you expected in your JS code.
 
+## More examples
+
+None of these compile on the Playground — they need `wasm-bindgen` (and sometimes `web-sys`) and a
+real `wasm32-unknown-unknown` build. Read them as patterns to try in a `wasm-pack` project.
+
+### Transforming a string for a browser UI
+
+A common reason to reach for WASM at all: doing text processing fast, in a function shared between
+a Rust backend and a Rust-compiled-to-WASM frontend, instead of writing the logic twice.
+
+```rust
+use wasm_bindgen::prelude::*;
+
+/// Turns "Hello World" into a URL-friendly "hello-world".
+#[wasm_bindgen]
+pub fn slugify(input: &str) -> String {
+    input
+        .to_lowercase()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-")
+}
+```
+
+Called from JavaScript as `slugify("Hello World")`, returning `"hello-world"` — the same slug logic
+your server already trusts, now running client-side with no round trip to the API.
+
+### Exposing a struct with methods, not just a function
+
+`#[wasm_bindgen]` isn't limited to free functions — put it on an `impl` block too, and JavaScript
+gets something that behaves like a real class:
+
+```rust
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub struct Counter {
+    value: i32,
+}
+
+#[wasm_bindgen]
+impl Counter {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Counter {
+        Counter { value: 0 }
+    }
+
+    pub fn increment(&mut self) {
+        self.value += 1;
+    }
+
+    pub fn value(&self) -> i32 {
+        self.value
+    }
+}
+```
+
+From JavaScript: `const c = new Counter(); c.increment(); c.value(); // 1` — `new`, method calls,
+and reading fields all just work, generated from ordinary Rust methods.
+
+### Calling `console.log` from Rust
+
+Before pulling in the whole `web-sys` crate, the smallest way to reach the browser console is to
+bind directly to it — this is the same pattern the `wasm-bindgen` guide's own console-log example
+uses:
+
+```rust
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+#[wasm_bindgen]
+pub fn process_order(order_id: u32) {
+    log(&format!("processing order #{order_id}"));
+}
+```
+
+The `extern "C"` block declares a function that already exists on the JS side (`console.log`);
+calling `log(...)` from Rust is really calling straight into the browser's console.
+
+### Loading a `--target web` package in an actual page
+
+`wasm-pack build --target web` produces an ES module you load directly with a `<script
+type="module">` tag — no bundler required for a quick demo:
+
+```bash
+wasm-pack build --target web
+```
+
+```html
+<script type="module">
+  import init, { greet } from "./pkg/mytool.js";
+
+  async function run() {
+    await init(); // fetches and instantiates the .wasm file
+    console.log(greet("Ferris"));
+  }
+
+  run();
+</script>
+```
+
+The `init()` call matters: with `--target web`, the module doesn't load the `.wasm` binary until you
+await `init()` yourself, so nothing bound with `#[wasm_bindgen]` is callable before that line runs.
+
+### Sharing one crate between native and WASM builds
+
+A crate that's meant to run both as a native CLI *and* compiled to WASM needs two implementations of
+anything that touches the filesystem — `#[cfg]` picks the right one per target, at compile time:
+
+```rust
+#[cfg(not(target_arch = "wasm32"))]
+fn log_to_file(message: &str) {
+    // native builds can write straight to disk
+    std::fs::write("app.log", message).ok();
+}
+
+#[cfg(target_arch = "wasm32")]
+fn log_to_file(message: &str) {
+    // the browser has no filesystem -- forward to the console instead
+    web_sys::console::log_1(&message.into());
+}
+```
+
+Every other caller in the crate just calls `log_to_file(...)` normally — the `#[cfg]` attributes
+make sure only one of the two versions is even compiled, depending on the target.
+
 ## Your turn
 
 This crate is meant to expose a `greet` function to JavaScript via `wasm-bindgen`, but `wasm-pack build --target web` fails with `Error: crate-type must be cdylib to compile to wasm32-unknown-unknown`:

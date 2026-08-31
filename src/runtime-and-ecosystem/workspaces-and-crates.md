@@ -145,6 +145,84 @@ serde = { workspace = true }
 - **Expecting private items to cross the boundary.** One crate can only use another's `pub` items.
   Forgetting `pub` gives a "not found" error even though the item is right there.
 
+## More examples
+
+### An app crate built on a shared core crate
+
+The classic split: `core` holds business logic with no framework attached, and `api` (a thin binary
+crate) just wires that logic up to HTTP. `core` doesn't know `api` exists, which means you could
+later add a `cli` crate that reuses the exact same logic for free.
+
+```text
+myproject/
+├── Cargo.toml            # [workspace], members = ["crates/api", "crates/core"]
+└── crates/
+    ├── core/
+    │   ├── Cargo.toml     # [package] name = "core"
+    │   └── src/lib.rs     # pub fn calculate_discount(...) -> f64 { ... }
+    └── api/
+        ├── Cargo.toml     # [dependencies] core = { path = "../core" }
+        └── src/main.rs    # use core::calculate_discount;
+```
+
+`core` stays a plain library with zero web dependencies, so it's easy to unit test in isolation —
+no server needs to be running just to check a discount calculation.
+
+### Sharing one dependency version across every member
+
+Without a shared table, it's easy for `api/Cargo.toml` to end up on `serde = "1.0.150"` while
+`core/Cargo.toml` drifts to `serde = "1.0.200"` — two copies get compiled and types stop matching
+across the crate boundary. Declaring the version once at the root and inheriting it everywhere
+closes that gap:
+
+```toml
+# root Cargo.toml
+[workspace]
+resolver = "2"
+members = ["crates/api", "crates/core"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+```
+
+```toml
+# crates/api/Cargo.toml
+[dependencies]
+serde = { workspace = true }
+tokio = { workspace = true }
+core = { path = "../core" }
+```
+
+Bump the version in one place at the root, and every member that opted in with `workspace = true`
+moves together.
+
+### Building or running just one member
+
+A workspace with five crates doesn't mean you always want to compile all five. Point Cargo at one
+package by name with `-p`:
+
+```bash
+cargo run -p api          # only builds+runs the api crate (and what it depends on)
+cargo build -p core       # only builds the core crate
+cargo test -p core        # only runs core's tests, not api's
+```
+
+This is the everyday command during development — you're usually iterating on one crate at a time,
+and `-p` skips rebuilding crates you didn't touch.
+
+### Why one shared `Cargo.lock` actually matters
+
+Picture `api` and `core` as *separate* projects instead of workspace members, each with its own
+`Cargo.lock`. Nothing stops `api` from locking `serde` at `1.0.150` while `core` locks it at
+`1.0.203` — two different versions of the same crate, compiled separately, with no guarantee that a
+`Serialize` impl from one version even matches a type from the other.
+
+Inside a workspace, there is exactly **one** `Cargo.lock` at the root, shared by every member. Cargo
+resolves each dependency to a single version that satisfies *all* crates at once. `api` and `core`
+are always building against the identical `serde`, so passing a `core` type through an `api` handler
+just works — the compiler never sees "two different `serde`s" because there's only ever one.
+
 ## Your turn
 
 This is a **spot-the-bug** in a `Cargo.toml`, since a workspace isn't a runnable program. This root

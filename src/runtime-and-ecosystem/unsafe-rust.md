@@ -141,6 +141,94 @@ typing `unsafe`. Treat wanting it as a signal to double-check there isn't a safe
 - **Assuming `unsafe` is faster by default.** It isn't magic speed. Often the safe version optimizes
   to identical machine code. Only reach for it after measuring a real bottleneck.
 
+## More examples
+
+### Writing a minimal `mem::swap`
+The standard library's `mem::swap` looks like an ordinary function, but swapping the contents of two `&mut T`s without a spare copy needs `unsafe` underneath — this is roughly how it works.
+
+```rust,editable
+fn my_swap<T>(a: &mut T, b: &mut T) {
+    unsafe {
+        let temp = std::ptr::read(a);
+        std::ptr::write(a, std::ptr::read(b));
+        std::ptr::write(b, temp);
+    }
+}
+
+fn main() {
+    let mut x = String::from("left");
+    let mut y = String::from("right");
+
+    my_swap(&mut x, &mut y);
+
+    println!("x = {x}, y = {y}");
+}
+```
+
+### A global ID counter with a mutable static
+A quick global ID generator is the classic reason to reach for a mutable `static` — but every read or write of it needs `unsafe`, because the compiler can't rule out two threads touching it at once.
+
+```rust,editable
+static mut NEXT_ID: u32 = 0;
+
+fn next_id() -> u32 {
+    unsafe {
+        NEXT_ID += 1;
+        NEXT_ID
+    }
+}
+
+fn main() {
+    println!("{}", next_id()); // 1
+    println!("{}", next_id()); // 2
+    println!("{}", next_id()); // 3
+}
+```
+
+### Reinterpreting bits with a `union`
+A union lets two different types share the same memory — reading whichever field you choose is unsafe because the compiler can't check that the bytes actually mean what you're asking for.
+
+```rust,editable
+union FloatOrInt {
+    f: f32,
+    i: i32,
+}
+
+fn main() {
+    let value = FloatOrInt { i: 1_078_530_011 };
+
+    unsafe {
+        println!("as int: {}", value.i);
+        println!("as float (same bits, reinterpreted): {}", value.f);
+    }
+}
+```
+
+### Computing a checksum over a struct's raw bytes
+Computing a checksum by reading a struct's raw bytes needs `unsafe`, because reinterpreting a `&T` as a `&[u8]` bypasses everything the compiler knows about the type.
+
+```rust,editable
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn checksum(value: &Point) -> u8 {
+    let ptr = value as *const Point as *const u8;
+    let len = std::mem::size_of::<Point>();
+
+    // SAFETY: `ptr` comes from a valid, live `&Point`, and `len` matches its exact size.
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+
+    bytes.iter().fold(0u8, |acc, b| acc.wrapping_add(*b))
+}
+
+fn main() {
+    let p = Point { x: 10, y: 20 };
+    println!("checksum: {}", checksum(&p));
+}
+```
+
 ## Your turn
 
 Unsafe/low-level code is best reasoned about rather than fiddled with blindly, so this is a "what's

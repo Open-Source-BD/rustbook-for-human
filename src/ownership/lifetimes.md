@@ -133,6 +133,78 @@ compiler asks — its error message will even suggest the annotation.
 - **Reading `'a` as a type.** `'a` is not a type like `i32`; it's a *label* for a duration. It goes
   in the `<...>` alongside generic type parameters but means "how long," not "what kind."
 
+## More examples
+
+### A struct holding two independently-lived references
+A search result might pair a snippet from a document with a highlighted term from a completely separate query string — the two don't have to share a lifespan.
+
+```rust,editable
+struct Match<'a, 'b> {
+    snippet: &'a str,
+    term: &'b str,
+}
+
+fn main() {
+    let document = String::from("Rust makes systems programming approachable");
+    let query = String::from("systems");
+    let m = Match { snippet: &document[5..], term: &query };
+    println!("found '{}' in: {}", m.term, m.snippet);
+}
+```
+
+### Picking a display name, with a tie-break rule
+A profile page shows the longer of a user's nickname or real name, but on a tie it should prefer the nickname — deepening the classic "return the longer slice" example with real logic.
+
+```rust,editable
+fn pick_display_name<'a>(nickname: &'a str, real_name: &'a str) -> &'a str {
+    if nickname.len() >= real_name.len() {
+        nickname
+    } else {
+        real_name
+    }
+}
+
+fn main() {
+    let nickname = String::from("Kai");
+    let real_name = String::from("Kai Anderson");
+    println!("{}", pick_display_name(&nickname, &real_name));
+}
+```
+
+### A generic function with a lifetime bound
+Finding the largest item in a list of scores or prices works the same way regardless of the item type, as long as you can compare them — and the result still borrows from the original list.
+
+```rust,editable
+fn largest<'a, T: PartialOrd>(items: &'a [T]) -> &'a T {
+    let mut max = &items[0];
+    for item in items {
+        if item > max {
+            max = item;
+        }
+    }
+    max
+}
+
+fn main() {
+    let prices = [12.5, 8.0, 21.75, 15.0];
+    println!("highest price: {}", largest(&prices));
+}
+```
+
+### Why returning a reference to a local variable fails
+This is the shape of the mistake lifetimes exist to prevent — shown here as a description, not code you can run:
+
+```rust
+fn make_greeting(name: &str) -> &str {
+    let greeting = format!("Hello, {name}!"); // greeting is LOCAL to this function
+    &greeting
+    // ERROR: cannot return reference to local variable `greeting`.
+    // `greeting` is dropped the instant this function ends, so any reference
+    // to it would dangle immediately. No lifetime annotation can fix this —
+    // the real fix is to return the owned `String` itself (drop the `&`).
+}
+```
+
 ## Your turn
 
 This function is supposed to return the first of two string slices, but it won't compile. The

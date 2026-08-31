@@ -113,6 +113,67 @@ Without `: u32`, Rust wouldn't know *which* number type to parse into, and would
 - **Expecting an array to grow.** Arrays are fixed length. If you try to "add" an item, there's no method for it. Reach for a `Vec` instead when the size changes.
 - **Overflowing a small integer.** A `u8` maxes out at 255. Going past it panics in debug builds. Pick a type big enough for your values.
 
+## More examples
+
+### A tuple as a function's multi-value return
+When a function needs to hand back more than one related value — like an x/y offset — a tuple is the simplest way, no extra type required.
+
+```rust,editable
+fn origin_offset() -> (i32, i32) {
+    (3, -7)
+}
+
+fn main() {
+    let (dx, dy) = origin_offset();
+    println!("move right {dx}, up {dy}");
+}
+```
+
+### A fixed-size array of days
+There are always exactly seven days in a week, so an array — not a growable list — is the right shape for this data.
+
+```rust,editable
+fn main() {
+    let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    println!("day 3 is {}", days[2]);
+    println!("week has {} days", days.len());
+}
+```
+
+### Combining `u32` and `i32` on purpose
+Inventory counts are naturally unsigned, but a "returns" ledger can go negative. Mixing them means converting one side explicitly so both operands agree.
+
+```rust,editable
+fn main() {
+    let inventory: u32 = 40;
+    let sold: i32 = -5; // sales returns can go negative in the ledger
+
+    let total = inventory as i32 + sold; // convert explicitly, types must match
+    println!("remaining: {total}");
+}
+```
+
+### A float precision surprise
+Floats can't represent every decimal exactly, so simple-looking arithmetic sometimes prints more digits than you expect. Rounding for display fixes the *look*, not the underlying value.
+
+```rust,editable
+fn main() {
+    let price = 0.1 + 0.2;
+    println!("{price}");        // 0.30000000000000004
+    println!("{:.2}", price);   // rounded for display: 0.30
+}
+```
+
+### A fixed array for pixel bytes
+An image pixel always has exactly three color channels, and each one fits in a single byte — a perfect match for a small, same-typed, fixed-length array.
+
+```rust,editable
+fn main() {
+    let pixel: [u8; 3] = [255, 87, 51]; // R, G, B
+    println!("red={}, green={}, blue={}", pixel[0], pixel[1], pixel[2]);
+}
+```
+
 ## Your turn
 
 This program mixes up its types in three places. Fix it so it compiles and prints the point and grade. Press ▶ Run.

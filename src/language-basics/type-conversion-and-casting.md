@@ -152,6 +152,79 @@ fn main() {
 - **Implementing `From` for a conversion that can actually fail.** `From` promises the conversion always succeeds. If some inputs are invalid, implement `TryFrom` and return `Err` for them.
 - **Calling `.unwrap()` on `.parse()` or `try_from()` with untrusted input** (user input, file contents, network data). That crashes the whole program on the first bad value instead of handling the error.
 
+## More examples
+
+### Parsing a CLI-style argument
+Command-line arguments always arrive as text, even when they represent a number, so parsing with a fallback is the everyday pattern for reading them safely.
+
+```rust,editable
+fn main() {
+    let args = ["quantity", "12"];
+    let quantity: i32 = args[1].parse().unwrap_or(0);
+    println!("ordering {quantity} units");
+}
+```
+
+### Safely fitting a value into a pixel channel
+A computed brightness value might come out too large for a single color channel, so `TryFrom` lets you check instead of silently corrupting the color.
+
+```rust,editable
+use std::convert::TryFrom;
+
+fn main() {
+    let brightness: i32 = 240;
+    match u8::try_from(brightness) {
+        Ok(channel) => println!("pixel channel: {channel}"),
+        Err(_) => println!("value doesn't fit in a byte"),
+    }
+}
+```
+
+### Truncating a request ID into a small bucket
+Hashing or bucketing schemes sometimes *want* the wraparound behavior of `as` — you're deliberately keeping only the low bits to spread values across a fixed number of buckets.
+
+```rust,editable
+fn main() {
+    let request_id: u32 = 4_294_967_290; // near u32::MAX
+    let bucket = request_id as u8; // wraps around, keeps only low 8 bits
+    println!("bucket: {bucket}");
+}
+```
+
+### Turning an enum into its numeric score
+Enums can carry an explicit numeric value, and `as` reads it back out — handy for things like priority levels you want to compare or sort.
+
+```rust,editable
+enum Priority {
+    Low = 1,
+    Medium = 5,
+    High = 10,
+}
+
+fn main() {
+    let level = Priority::Medium as i32;
+    println!("priority score: {level}");
+}
+```
+
+### `From` for a total, always-valid unit conversion
+Minutes-to-seconds can never fail — every minute count has a valid seconds count — so this is exactly the kind of conversion `From` is meant for.
+
+```rust,editable
+struct Seconds(u32);
+
+impl From<u32> for Seconds {
+    fn from(minutes: u32) -> Seconds {
+        Seconds(minutes * 60)
+    }
+}
+
+fn main() {
+    let duration: Seconds = 5.into(); // 5 minutes -> seconds
+    println!("{} seconds", duration.0);
+}
+```
+
 ## Your turn
 
 This function is supposed to clamp an `i32` down into a `u8`, returning `0` for anything out of range. It doesn't compile.

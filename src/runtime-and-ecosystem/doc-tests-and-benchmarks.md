@@ -124,6 +124,108 @@ cargo bench
 - **Expecting `cargo bench` to work out of the box on stable.** The built-in `#[bench]`/`cargo bench` pair is nightly-only; on stable you need `criterion` (or a similar crate) with `harness = false`.
 - **Forgetting `black_box`.** Without it, a hand-rolled micro-benchmark can have its entire body optimized away, since the compiler sees the result is never observably used — you end up benchmarking nothing.
 
+## More examples
+
+### A doc-tested string utility
+A `reverse` function's doc-test doubles as its example and its proof — if someone breaks the logic, `cargo test` catches it in the same place the example lives.
+
+```rust
+/// Reverses a string.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(my_crate::reverse("stressed"), "desserts");
+/// ```
+pub fn reverse(s: &str) -> String {
+    s.chars().rev().collect()
+}
+```
+
+### Hiding setup so a `median` doc-test reads clean
+A `median` function's doc-test needs a slice already built before the interesting assertion — `# `-hiding that setup line keeps the rendered docs down to just the part that matters.
+
+```rust
+/// Returns the median of a sorted slice of numbers.
+///
+/// # Examples
+///
+/// ```
+/// # let scores = vec![70, 82, 88, 91, 95];
+/// assert_eq!(my_crate::median(&scores), 88);
+/// ```
+pub fn median(sorted: &[i32]) -> i32 {
+    sorted[sorted.len() / 2]
+}
+```
+
+### Timing a prime-counting loop
+A prime-counting loop is exactly the kind of thing worth sanity-checking with a raw `Instant` reading before reaching for anything heavier.
+
+```rust,editable
+use std::time::Instant;
+
+fn is_prime(n: u64) -> bool {
+    if n < 2 {
+        return false;
+    }
+    let mut i = 2;
+    while i * i <= n {
+        if n % i == 0 {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+fn main() {
+    let start = Instant::now();
+    let count = (2..200_000u64).filter(|&n| is_prime(n)).count();
+    let elapsed = start.elapsed();
+
+    println!("found {count} primes under 200,000 in {elapsed:?}");
+}
+```
+
+### Benchmarking linear search against binary search
+Two ways to find a value in a sorted `Vec` have very different growth rates — `criterion` measures both under the same conditions instead of trusting a guess about which is faster.
+
+```toml
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "search_bench"
+harness = false
+```
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+
+fn linear_search(haystack: &[i32], needle: i32) -> bool {
+    haystack.iter().any(|&x| x == needle)
+}
+
+fn binary_search(haystack: &[i32], needle: i32) -> bool {
+    haystack.binary_search(&needle).is_ok()
+}
+
+fn bench_search(c: &mut Criterion) {
+    let data: Vec<i32> = (0..10_000).collect();
+
+    c.bench_function("linear search", |b| {
+        b.iter(|| linear_search(black_box(&data), black_box(9_999)))
+    });
+    c.bench_function("binary search", |b| {
+        b.iter(|| binary_search(black_box(&data), black_box(9_999)))
+    });
+}
+
+criterion_group!(benches, bench_search);
+criterion_main!(benches);
+```
+
 ## Your turn
 
 This doc-test compiles fine but fails when `cargo test` actually runs it.

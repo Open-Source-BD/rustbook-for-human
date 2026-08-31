@@ -234,6 +234,106 @@ let result = tokio::task::spawn_blocking(|| {
   either fails to compile (`.await` needs async context) or panics at runtime with something
   like "there is no reactor running" — a sure sign nothing is driving your futures.
 
+## More examples
+
+### Downloading a list of URLs concurrently
+Downloading many URLs at once means spawning one task per URL instead of awaiting them one after another — collect the handles, then await each to gather every result.
+
+```rust
+#[tokio::main]
+async fn main() {
+    let urls = vec!["a.com", "b.com", "c.com"];
+    let mut handles = vec![];
+
+    for url in urls {
+        handles.push(tokio::spawn(async move {
+            format!("{url}: 200 OK")
+        }));
+    }
+
+    for handle in handles {
+        let result = handle.await.unwrap();
+        println!("{result}");
+    }
+}
+```
+
+### Counting completed jobs from concurrent tasks
+Multiple spawned tasks that each need to report completion can share an `Arc<Mutex<u32>>` counter, exactly like threads do — the lock is just held very briefly, never across an `.await`.
+
+```rust
+use std::sync::{Arc, Mutex};
+
+#[tokio::main]
+async fn main() {
+    let completed = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for job_id in 0..5 {
+        let completed = Arc::clone(&completed);
+        handles.push(tokio::spawn(async move {
+            // pretend some async work happens here
+            *completed.lock().unwrap() += 1;
+            job_id
+        }));
+    }
+
+    for handle in handles {
+        handle.await.unwrap();
+    }
+
+    println!("jobs completed: {}", *completed.lock().unwrap()); // 5
+}
+```
+
+### Racing a primary and backup data source
+When you have a primary and a backup service, race them with `select!` and use whichever answers first — the loser is simply abandoned.
+
+```rust
+use std::time::Duration;
+
+async fn primary() -> String {
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    "primary".to_string()
+}
+
+async fn backup() -> String {
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    "backup".to_string()
+}
+
+#[tokio::main]
+async fn main() {
+    tokio::select! {
+        result = primary() => println!("used {result}'s response"),
+        result = backup() => println!("used {result}'s response"),
+    }
+}
+```
+
+### Hashing a password without blocking other tasks
+Password hashing is deliberately slow CPU work — running it directly in an async task would freeze every other task on that thread, so hand it to `spawn_blocking` instead.
+
+```rust
+#[tokio::main]
+async fn main() {
+    let password = "correct horse battery staple".to_string();
+
+    let hashed = tokio::task::spawn_blocking(move || {
+        // pretend this is an expensive, CPU-bound hash function
+        let mut hash: u64 = 0;
+        for byte in password.bytes() {
+            hash = hash.wrapping_mul(31).wrapping_add(byte as u64);
+        }
+        hash
+    })
+    .await
+    .unwrap();
+
+    println!("hashed password: {hashed}");
+}
+```
+
 ## Your turn
 
 This spawns a task that greets a name captured from `main`. It refuses to compile.

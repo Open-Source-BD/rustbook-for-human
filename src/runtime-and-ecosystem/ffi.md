@@ -110,6 +110,86 @@ tiny and auditable; everyone else gets a friendly, checked interface.
 - **Skipping `unsafe` mentally.** FFI *compiles* to real machine calls with zero checking. Treat
   every boundary as a place a bug can hide.
 
+## More examples
+
+### Computing a square root via the C math library
+Not every C function needs a custom library — `sqrt` already lives in the C standard library, so declaring it is enough to borrow it instead of reimplementing it in Rust.
+
+```rust
+// Links against the C math library — run in a real project, not the Playground.
+extern "C" {
+    fn sqrt(x: f64) -> f64;
+}
+
+fn main() {
+    let result = unsafe { sqrt(64.0) };
+    println!("sqrt(64.0) = {result}");
+}
+```
+
+### Measuring a C string's length safely
+Handing a C function a raw Rust `String` would read garbage past the end, since C expects a zero-terminated string — `CString` builds one that `strlen` can safely walk.
+
+```rust
+// Links against the C standard library — run in a real project, not the Playground.
+use std::ffi::CString;
+
+extern "C" {
+    fn strlen(s: *const i8) -> usize;
+}
+
+fn main() {
+    let greeting = CString::new("hello from rust").expect("no interior nulls");
+    let length = unsafe { strlen(greeting.as_ptr()) };
+    println!("C measured the string at {length} bytes");
+}
+```
+
+### Exposing a checksum function for a C caller to link against
+A C program validating downloaded files needs a fast checksum — exporting one from Rust with `no_mangle` lets it call straight into compiled Rust code instead of a slower C implementation.
+
+```rust
+// In a real library crate (a `cdylib`), a C program could link against this and call `checksum`.
+#[unsafe(no_mangle)]
+pub extern "C" fn checksum(data: *const u8, len: usize) -> u32 {
+    let bytes = unsafe { std::slice::from_raw_parts(data, len) };
+    bytes.iter().map(|&b| b as u32).sum()
+}
+```
+
+### Wrapping an unsafe sensor-reading call in a safe API
+A C sensor driver returns readings through an out-pointer and a status code — wrapping that in a function returning `Option<SensorReading>` means the rest of the program never touches `unsafe` directly.
+
+```rust
+// Links against a C sensor library — run in a real project, not the Playground.
+#[repr(C)]
+struct SensorReading {
+    temperature_c: f32,
+    humidity_pct: f32,
+}
+
+extern "C" {
+    fn read_sensor(out: *mut SensorReading) -> i32;
+}
+
+fn read_sensor_safe() -> Option<SensorReading> {
+    let mut reading = SensorReading { temperature_c: 0.0, humidity_pct: 0.0 };
+    let status = unsafe { read_sensor(&mut reading) };
+    if status == 0 {
+        Some(reading)
+    } else {
+        None
+    }
+}
+
+fn main() {
+    match read_sensor_safe() {
+        Some(r) => println!("{}C, {}%", r.temperature_c, r.humidity_pct),
+        None => println!("sensor read failed"),
+    }
+}
+```
+
 ## Your turn
 
 This one is a **spot-the-bug**, because FFI needs a real toolchain and can't run on the Playground.

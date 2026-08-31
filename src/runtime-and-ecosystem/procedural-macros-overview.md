@@ -121,6 +121,96 @@ No more guessing what a derive "probably" does — you can read exactly what it 
 - **Missing the runtime feature flags an attribute macro needs.** `#[tokio::main]` needs `tokio = { version = "1", features = ["full"] }` (or at least `rt-multi-thread` and `macros`) — without the right features enabled, you get errors that look unrelated to the actual missing flag.
 - **Staring at your own struct trying to debug a derive-generated error.** The error is almost always in the *generated* code, not your definition. Reach for `cargo expand` before you reach for guesswork.
 
+## More examples
+
+### A CLI's flags for free
+`#[derive(Parser)]` from clap reads a struct's fields and doc comments and generates all the argument parsing, `--help` text, and validation — you never hand-write a single `match` over `std::env::args()`.
+
+```rust
+use clap::Parser;
+
+#[derive(Parser)]
+struct Args {
+    /// Name to greet
+    name: String,
+    /// Number of times to greet
+    #[arg(short, long, default_value_t = 1)]
+    count: u8,
+}
+
+fn main() {
+    let args = Args::parse();
+    for _ in 0..args.count {
+        println!("Hello, {}!", args.name);
+    }
+}
+```
+
+### Async methods on a trait, before Rust supported them natively
+`#[async_trait]` is an attribute macro that rewrites a trait (and its impls) so its methods can be `async fn`, transforming them into boxed futures behind the scenes — exactly the "rewrite the whole item" behavior `#[tokio::main]` does for `main`.
+
+```rust
+use async_trait::async_trait;
+
+#[async_trait]
+trait Notifier {
+    async fn send(&self, message: &str);
+}
+
+struct EmailNotifier;
+
+#[async_trait]
+impl Notifier for EmailNotifier {
+    async fn send(&self, message: &str) {
+        println!("emailing: {message}");
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let notifier = EmailNotifier;
+    notifier.send("your order shipped").await;
+}
+```
+
+### Compile-time-checked HTML templates
+`maud`'s `html!` is a function-like macro that parses actual HTML syntax at compile time — a mismatched tag is a compile error, not a runtime bug discovered in a browser.
+
+```rust
+use maud::html;
+
+fn main() {
+    let name = "Ada";
+    let markup = html! {
+        h1 { "Welcome, " (name) "!" }
+    };
+    println!("{}", markup.into_string());
+}
+```
+
+### Generating a builder for a config struct
+`#[derive(Builder)]` from `derive_builder` writes the whole builder pattern — the setter methods, the `build()` that checks required fields — from a plain struct definition, so you don't hand-write it yourself.
+
+```rust
+use derive_builder::Builder;
+
+#[derive(Builder, Debug)]
+struct ServerConfig {
+    host: String,
+    #[builder(default = "8080")]
+    port: u16,
+}
+
+fn main() {
+    let config = ServerConfigBuilder::default()
+        .host("localhost".to_string())
+        .build()
+        .unwrap();
+
+    println!("{config:?}");
+}
+```
+
 ## Your turn
 
 This code imports `Serialize` and tries to turn a `User` into JSON, but it doesn't compile. Something is missing that would make `User` an actual `Serialize` type, not just code that mentions the trait.

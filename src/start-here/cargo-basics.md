@@ -91,6 +91,44 @@ That's the core loop. Everything else you can look up when you need it.
 - **Reaching for `cargo clean` at the first weird error.** `cargo clean` deletes all built files so the next build starts from scratch — slow, and rarely the actual fix. Stale-build problems are uncommon; read the real error first and only clean if you genuinely suspect leftover build junk.
 - **Not committing `Cargo.lock` for an application.** Leave it out and different machines may pull different dependency versions, causing bugs that only appear "over there." Commit it for apps so everyone builds the same thing.
 
+## More examples
+
+### Starting a library instead of an app
+You're writing a chunk of logic — say, date-parsing helpers — that other code will import, not something you run directly.
+
+```bash
+cargo new --lib date_utils
+```
+
+### Adding a dependency and building it
+Your project needs to read JSON, so you pull in a crate instead of writing a parser yourself.
+
+```bash
+cargo add serde_json
+cargo build
+```
+
+### Running just one test by name
+Your test suite has grown to two hundred tests, but you're only working on one function right now and don't want to wait for all of them every time.
+
+```bash
+cargo test parses_positive_numbers
+```
+
+### Fast feedback with `cargo check`
+You're mid-refactor, chasing compiler errors one at a time, and producing a full runnable binary after every tiny edit is wasted work.
+
+```bash
+cargo check
+```
+
+### Running one binary out of several
+Your project grew a `src/bin/` folder with a couple of small helper programs alongside the main app, and you want to run just one of them.
+
+```bash
+cargo run --bin date_utils_cli
+```
+
 ## Your turn
 
 No code to debug this time — the exercise is to run the real workflow and read what Cargo prints. In your terminal, do exactly this:

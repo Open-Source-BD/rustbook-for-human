@@ -148,6 +148,92 @@ fn main() {
 - **Giving a `BTreeMap` or `BinaryHeap` a key/element type without `Ord`.** The error is `the trait bound '...: Ord' is not satisfied`. For a custom struct, add `#[derive(PartialEq, Eq, PartialOrd, Ord)]` — all four are needed, since `Ord` itself depends on the other three.
 - **Choosing `BTreeMap` purely out of habit.** If you never need sorted iteration or range queries, `HashMap`'s average O(1) lookups are faster than `BTreeMap`'s O(log n) — don't pay for ordering you don't use.
 
+## More examples
+
+### A sorted, deduplicated SKU catalog
+`BTreeSet` turns a raw scan of product codes into a clean, alphabetized export in one pass — duplicates just fail to re-insert, and iteration always comes out sorted.
+
+```rust,editable
+use std::collections::BTreeSet;
+
+fn main() {
+    let mut skus = BTreeSet::new();
+    skus.insert("SKU-042");
+    skus.insert("SKU-007");
+    skus.insert("SKU-042"); // duplicate, ignored
+    skus.insert("SKU-019");
+
+    println!("{} unique SKUs", skus.len());
+    for sku in &skus {
+        println!("{}", sku);
+    }
+}
+```
+
+### A rolling average over sensor readings
+A `VecDeque` capped at a fixed size is a cheap sliding window — push a new reading onto the back, pop the oldest off the front, and the average is always over just the last few.
+
+```rust,editable
+use std::collections::VecDeque;
+
+fn main() {
+    let mut window: VecDeque<f64> = VecDeque::new();
+    let readings = [21.0, 22.5, 23.0, 19.5, 20.0];
+
+    for reading in readings {
+        window.push_back(reading);
+        if window.len() > 3 {
+            window.pop_front(); // keep only the last 3 readings
+        }
+        let avg: f64 = window.iter().sum::<f64>() / window.len() as f64;
+        println!("latest: {:.1}, rolling avg: {:.2}", reading, avg);
+    }
+}
+```
+
+### A support ticket priority queue
+Pushing `(priority, description)` tuples into a `BinaryHeap` means `.pop()` always hands back the most urgent ticket first, without sorting the whole queue every time one arrives.
+
+```rust,editable
+use std::collections::BinaryHeap;
+
+fn main() {
+    let mut tickets = BinaryHeap::new();
+    tickets.push((1, "typo on homepage"));
+    tickets.push((5, "payment system down"));
+    tickets.push((3, "slow page load"));
+
+    while let Some((priority, issue)) = tickets.pop() {
+        println!("[P{}] {}", priority, issue);
+    }
+}
+```
+
+### Building a chronological event timeline
+`BTreeMap` combines with the `entry` API just like `HashMap` does — grouping events under their timestamp and letting the map's sorted keys put the whole log in time order for free.
+
+```rust,editable
+use std::collections::BTreeMap;
+
+fn main() {
+    let events = [
+        (930, "server restarted"),
+        (215, "deploy started"),
+        (930, "cache cleared"),
+        (600, "backup completed"),
+    ];
+
+    let mut timeline: BTreeMap<u32, Vec<&str>> = BTreeMap::new();
+    for (minute, event) in events {
+        timeline.entry(minute).or_insert_with(Vec::new).push(event);
+    }
+
+    for (minute, events_at) in &timeline {
+        println!("{:04}: {:?}", minute, events_at);
+    }
+}
+```
+
 ## Your turn
 
 This program wants a version-sorted release log using `BTreeMap`, but it doesn't compile.

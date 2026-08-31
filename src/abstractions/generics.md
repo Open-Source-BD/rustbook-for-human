@@ -91,6 +91,105 @@ One `Pair` definition, usable with any type. `Pair<i32>` and `Pair<&str>` are bo
 - **Reaching for generics when one concrete type is fine.** Generics earn their keep when *several* real types will flow through. If only `i32` ever passes, a generic just adds noise. Add the placeholder when real variety shows up, not before.
 - **Confusing generics with trait objects (`dyn`).** `<T: Greet>` picks one concrete type per call and is resolved at compile time. `&dyn Greet` mixes different types at runtime. For most beginner code, generics are what you want.
 
+## More examples
+
+### Finding the smallest, not the largest
+The same shape of function works whether you want the max or the min — only the comparison direction changes, and the bound needed is identical.
+
+```rust,editable
+fn smallest<T: PartialOrd + Copy>(items: &[T]) -> T {
+    let mut min = items[0];
+    for &item in items {
+        if item < min {
+            min = item;
+        }
+    }
+    min
+}
+
+fn main() {
+    let prices = [19.99, 4.50, 12.25];
+    let scores = [88, 92, 71, 95];
+    println!("cheapest: {}", smallest(&prices));
+    println!("lowest score: {}", smallest(&scores));
+}
+```
+
+### A generic struct holding one value
+Not every generic type needs two fields like `Pair<T>` — sometimes you just want a single value wrapped with some extra behavior, usable with whatever type shows up.
+
+```rust,editable
+struct Wrapper<T> {
+    value: T,
+}
+
+impl<T> Wrapper<T> {
+    fn get(&self) -> &T {
+        &self.value
+    }
+}
+
+fn main() {
+    let w1 = Wrapper { value: 42 };
+    let w2 = Wrapper { value: String::from("hello") };
+    println!("{}", w1.get());
+    println!("{}", w2.get());
+}
+```
+
+### Two independent type parameters
+A label and a value rarely share a type — `combine` accepts any two types at all, as long as both can be displayed.
+
+```rust,editable
+use std::fmt::Display;
+
+fn combine<T: Display, U: Display>(label: T, value: U) -> String {
+    format!("{}: {}", label, value)
+}
+
+fn main() {
+    println!("{}", combine("age", 30));
+    println!("{}", combine('x', 3.14));
+}
+```
+
+### Constraining a generic just enough to print it
+Sometimes the only thing a function does with `T` is print it for debugging — so the only bound it needs is `Debug`, nothing more.
+
+```rust,editable
+use std::fmt::Debug;
+
+fn dump<T: Debug>(label: &str, item: T) {
+    println!("{} = {:?}", label, item);
+}
+
+fn main() {
+    dump("nums", vec![1, 2, 3]);
+    dump("pair", (true, "yes"));
+}
+```
+
+### Clamping a value into a range
+A generic isn't just for comparing two values — `clamp_value` works on any type that can be ordered, whether that's a game score, a volume level, or a price.
+
+```rust,editable
+fn clamp_value<T: PartialOrd>(value: T, min: T, max: T) -> T {
+    if value < min {
+        min
+    } else if value > max {
+        max
+    } else {
+        value
+    }
+}
+
+fn main() {
+    println!("{}", clamp_value(15, 0, 10));   // 10
+    println!("{}", clamp_value(-5, 0, 10));   // 0
+    println!("{}", clamp_value(4.5, 0.0, 10.0)); // 4.5
+}
+```
+
 ## Your turn
 
 This function is supposed to return the bigger of two values, for any comparable type. It doesn't compile. Fix the bound so it prints `9` and `z`.

@@ -90,6 +90,89 @@ Format a variable straight into the SQL string instead, and you've reopened the 
 - **Treating sqlx like an ORM.** There's no `.where()`/`.order_by()` chain — you write the SQL yourself. Trying to build queries piece-by-piece in Rust fights the library instead of using it.
 - **Mismatched Rust/SQL types.** A `NULL`-able SQL column mapped to a non-`Option` Rust field is a compile error with `query!` (which is the point — it caught a real mismatch), not a bug to silence.
 
+## More examples
+
+### Creating a post and getting its id back
+Inserting a row often isn't enough by itself — a `RETURNING id` clause hands back the database-generated primary key in the same round trip.
+
+```rust
+use sqlx::PgPool;
+
+async fn create_post(pool: &PgPool, title: &str) -> sqlx::Result<i64> {
+    sqlx::query_scalar("INSERT INTO posts (title) VALUES ($1) RETURNING id")
+        .bind(title)
+        .fetch_one(pool)
+        .await
+}
+```
+
+### Updating a user's email address
+An account-settings form's "save" button is just an `UPDATE` with two bound parameters — the row to change and the new value, never raw SQL text.
+
+```rust
+use sqlx::PgPool;
+
+async fn update_email(pool: &PgPool, user_id: i64, new_email: &str) -> sqlx::Result<()> {
+    sqlx::query("UPDATE users SET email = $1 WHERE id = $2")
+        .bind(new_email)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+```
+
+### Transferring money without leaving an account half-updated
+Moving money between two accounts has to be all-or-nothing — a transaction makes sure a crash between the two updates can't leave one account debited and the other never credited.
+
+```rust
+use sqlx::PgPool;
+
+async fn transfer_funds(
+    pool: &PgPool,
+    from_account: i64,
+    to_account: i64,
+    amount_cents: i64,
+) -> sqlx::Result<()> {
+    let mut tx = pool.begin().await?;
+
+    sqlx::query("UPDATE accounts SET balance_cents = balance_cents - $1 WHERE id = $2")
+        .bind(amount_cents)
+        .bind(from_account)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2")
+        .bind(amount_cents)
+        .bind(to_account)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await
+}
+```
+
+### Paginating a blog's list of posts
+A blog's archive page can't load every post at once — `LIMIT` and `OFFSET`, bound the same way as any other value, fetch just the page the reader asked for.
+
+```rust
+use sqlx::PgPool;
+
+#[derive(sqlx::FromRow)]
+struct Post {
+    id: i64,
+    title: String,
+}
+
+async fn list_posts_page(pool: &PgPool, page: i64, page_size: i64) -> sqlx::Result<Vec<Post>> {
+    sqlx::query_as::<_, Post>("SELECT id, title FROM posts ORDER BY id LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(page * page_size)
+        .fetch_all(pool)
+        .await
+}
+```
+
 ## Your turn
 
 This function looks up a user by name — but it builds the SQL by formatting `name` straight into the query string instead of using a bound parameter.

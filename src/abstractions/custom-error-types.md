@@ -177,6 +177,166 @@ You won't need `source()` for every error type, but it's what lets tools print a
 - **One giant catch-all variant instead of one per failure mode.** `ConfigError::Other(String)` for everything defeats the point — callers can no longer `match` on *which* thing failed. Give each real failure mode its own variant.
 - **Writing all of this by hand for every project.** It's exactly what the `thiserror` crate automates — see the next lesson before hand-rolling a large error enum from scratch.
 
+## More examples
+
+### Three ways a CSV row can go wrong
+A small import tool has to reject bad rows without crashing the whole batch — an enum with one variant per failure mode lets it explain exactly what was wrong with each line.
+
+```rust,editable
+#[derive(Debug)]
+enum RowError {
+    Empty,
+    WrongFieldCount(usize),
+    BadNumber(String),
+}
+
+fn parse_row(line: &str) -> Result<(String, f64), RowError> {
+    if line.trim().is_empty() {
+        return Err(RowError::Empty);
+    }
+    let fields: Vec<&str> = line.split(',').collect();
+    if fields.len() != 2 {
+        return Err(RowError::WrongFieldCount(fields.len()));
+    }
+    let price: f64 = fields[1]
+        .trim()
+        .parse()
+        .map_err(|_| RowError::BadNumber(fields[1].to_string()))?;
+    Ok((fields[0].to_string(), price))
+}
+
+fn main() {
+    for line in ["apple,1.50", "banana", "  ", "pear,free"] {
+        println!("{line:?} -> {:?}", parse_row(line));
+    }
+}
+```
+
+### Converting a std error automatically with `From`
+Loading a settings file can fail because the file isn't there (an `io::Error`) or because it's empty — wiring up `From<io::Error>` means `?` handles the first case without a `.map_err(...)` at the call site.
+
+```rust,editable
+use std::fmt;
+use std::io;
+
+#[derive(Debug)]
+enum SettingsError {
+    Read(io::Error),
+    Empty,
+}
+
+impl fmt::Display for SettingsError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SettingsError::Read(e) => write!(f, "couldn't read settings file: {e}"),
+            SettingsError::Empty => write!(f, "settings file is empty"),
+        }
+    }
+}
+
+impl From<io::Error> for SettingsError {
+    fn from(e: io::Error) -> Self {
+        SettingsError::Read(e)
+    }
+}
+
+fn load_settings(path: &str) -> Result<String, SettingsError> {
+    let text = std::fs::read_to_string(path)?; // io::Error -> SettingsError via From
+    if text.trim().is_empty() {
+        return Err(SettingsError::Empty);
+    }
+    Ok(text)
+}
+
+fn main() {
+    match load_settings("does-not-exist.toml") {
+        Ok(text) => println!("loaded: {text}"),
+        Err(e) => println!("error: {e}"),
+    }
+}
+```
+
+### Reacting differently depending on which variant you got
+A network call might be worth retrying, or might not — matching on the specific error variant lets the caller decide, instead of treating every failure the same way.
+
+```rust,editable
+#[derive(Debug)]
+enum FetchError {
+    Timeout,
+    NotFound,
+}
+
+fn fetch(attempt: u32) -> Result<String, FetchError> {
+    match attempt {
+        0 => Err(FetchError::Timeout),
+        1 => Err(FetchError::Timeout),
+        _ => Ok("payload".to_string()),
+    }
+}
+
+fn main() {
+    let mut attempt = 0;
+    loop {
+        match fetch(attempt) {
+            Ok(data) => {
+                println!("got it: {data}");
+                break;
+            }
+            Err(FetchError::Timeout) => {
+                println!("timed out, retrying...");
+                attempt += 1;
+            }
+            Err(FetchError::NotFound) => {
+                println!("gone for good, giving up");
+                break;
+            }
+        }
+    }
+}
+```
+
+### Walking a chain of causes with `.source()`
+When a database wrapper fails because the underlying connection failed, exposing that inner error through `.source()` lets a logger print the full "here's what actually broke" chain instead of a vague one-liner.
+
+```rust,editable
+use std::error::Error;
+use std::fmt;
+use std::io;
+
+#[derive(Debug)]
+struct DbError {
+    cause: io::Error,
+}
+
+impl fmt::Display for DbError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "could not connect to database")
+    }
+}
+
+impl Error for DbError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(&self.cause)
+    }
+}
+
+fn connect() -> Result<(), DbError> {
+    let cause = io::Error::new(io::ErrorKind::ConnectionRefused, "port 5432 refused");
+    Err(DbError { cause })
+}
+
+fn main() {
+    if let Err(e) = connect() {
+        println!("error: {e}");
+        let mut source = e.source();
+        while let Some(s) = source {
+            println!("  caused by: {s}");
+            source = s.source();
+        }
+    }
+}
+```
+
 ## Your turn
 
 `get_port` should convert a `ParseIntError` into a `ConfigError` automatically via `?`, but it doesn't compile.

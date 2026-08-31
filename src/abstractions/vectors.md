@@ -171,6 +171,81 @@ A `Vec` is backed by one contiguous block of heap memory. When it runs out of ro
 - **Skipping `Vec::with_capacity` in a hot loop.** Repeatedly pushing into a `Vec::new()` when you already know the final size causes avoidable reallocations and copies. Not wrong, just slower than it needs to be.
 - **Trying to print a `Vec` with `{}`.** Use `{:?}` (debug format) for whole vectors; plain `{}` only works for single values with a `Display` implementation.
 
+## More examples
+
+### Shopping cart total
+Once prices are in a `Vec`, `.iter().sum()` turns "add up every item" into one line instead of a hand-rolled loop.
+
+```rust,editable
+fn main() {
+    let cart = vec![19.99, 5.50, 3.25, 12.00];
+    let total: f64 = cart.iter().sum();
+    println!("cart total: ${:.2}", total);
+}
+```
+
+### Deduplicating scraped URLs
+A scraper that follows links will see the same page more than once. Sorting then `dedup`-ing turns a messy list of visited pages into the distinct set.
+
+```rust,editable
+fn main() {
+    let mut urls = vec![
+        "site.com/a".to_string(),
+        "site.com/b".to_string(),
+        "site.com/a".to_string(),
+        "site.com/c".to_string(),
+        "site.com/b".to_string(),
+    ];
+
+    urls.sort();
+    urls.dedup();
+
+    println!("{} unique pages found", urls.len());
+    println!("{:?}", urls);
+}
+```
+
+### An undo history as a stack
+A text editor's undo button always undoes the *most recent* action — exactly what `push`/`pop` on a `Vec` give you for free.
+
+```rust,editable
+fn main() {
+    let mut history: Vec<String> = Vec::new();
+    history.push("typed 'hello'".to_string());
+    history.push("bolded text".to_string());
+    history.push("inserted image".to_string());
+
+    if let Some(last_action) = history.pop() {
+        println!("undoing: {}", last_action);
+    }
+    println!("remaining history: {:?}", history);
+}
+```
+
+### Chunking a list into batches
+An email service that only accepts 2 recipients per request needs the full list broken into fixed-size groups first — `.chunks(n)` does exactly that without any manual index math.
+
+```rust,editable
+fn main() {
+    let emails = vec!["a@x.com", "b@x.com", "c@x.com", "d@x.com", "e@x.com"];
+
+    for (i, batch) in emails.chunks(2).enumerate() {
+        println!("sending batch {}: {:?}", i + 1, batch);
+    }
+}
+```
+
+### Removing an item by value
+Banning a user should remove every occurrence of their name from a list, not just one — `retain` keeps everything that *doesn't* match.
+
+```rust,editable
+fn main() {
+    let mut usernames = vec!["alice", "spam_bot", "bob", "spam_bot", "carol"];
+    usernames.retain(|&name| name != "spam_bot");
+    println!("{:?}", usernames);
+}
+```
+
 ## Your turn
 
 This program should pop the top of a stack and print it, but it doesn't compile.

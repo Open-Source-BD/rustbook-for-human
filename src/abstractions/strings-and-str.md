@@ -95,6 +95,79 @@ Because of this, you also **can't index text by number** — `word[0]` is a comp
 - **Assuming `.len()` is the character count.** It's the *byte* count. For visible characters use `.chars().count()`.
 - **Taking `String` as a parameter when you only read it.** This forces callers to give up ownership for no reason. Prefer `&str` for read-only text arguments.
 
+## More examples
+
+### Cleaning up user input
+Form fields arrive messy — stray whitespace, inconsistent casing. Normalize them before you compare or store them.
+
+```rust,editable
+fn main() {
+    let raw_input = "   Alice@Example.com  \n";
+    let clean = raw_input.trim().to_lowercase();
+    println!("clean email: '{}'", clean);
+}
+```
+
+### Splitting a CSV-like line
+Config files and simple data dumps are often just comma-separated fields. `.split()` plus `.trim()` handles the common case without pulling in a CSV crate.
+
+```rust,editable
+fn main() {
+    let line = "Ferris, 8, Crab";
+    let fields: Vec<&str> = line.split(',').map(|f| f.trim()).collect();
+    println!("{:?}", fields); // ["Ferris", "8", "Crab"]
+}
+```
+
+### Router-style path matching
+A tiny web framework has to decide which handler owns a request path. `starts_with`/`ends_with` are the bread and butter of that decision.
+
+```rust,editable
+fn main() {
+    let path = "/api/users/42";
+
+    if path.starts_with("/api/users/") {
+        println!("route: get user");
+    } else if path.ends_with(".json") {
+        println!("route: serve json file");
+    } else {
+        println!("route: not found");
+    }
+}
+```
+
+### Building a receipt line by line
+Sometimes you don't have all the text up front — you build it as you go, like assembling a shopping list into one printable line.
+
+```rust,editable
+fn main() {
+    let items = vec!["eggs", "milk", "bread"];
+    let mut receipt = String::new();
+
+    for item in &items {
+        receipt.push_str(item);
+        receipt.push_str(", ");
+    }
+
+    println!("{}", receipt); // eggs, milk, bread,
+}
+```
+
+### A helper that formats log lines
+Utility functions like this get called with all kinds of text — owned `String`s built at runtime, and `&str` literals. Taking `&str` parameters means one function serves both.
+
+```rust,editable
+fn log_line(level: &str, message: &str) -> String {
+    format!("[{}] {}", level.to_uppercase(), message)
+}
+
+fn main() {
+    let msg = String::from("server started");
+    println!("{}", log_line("info", &msg));
+    println!("{}", log_line("warn", "disk almost full"));
+}
+```
+
 ## Your turn
 
 This function should return the text in uppercase, and be callable with both a `String` and a literal. It doesn't compile. Fix the parameter type.

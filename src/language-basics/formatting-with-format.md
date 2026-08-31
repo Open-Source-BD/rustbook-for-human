@@ -136,6 +136,66 @@ Inside `fmt`, you use `write!(f, ...)` — the same macro family, now writing in
 - **Dropping the `Result` from `write!`.** `write!`/`writeln!` can fail (writing to a file, for instance), so Rust warns on an unused `Result` — call `.unwrap()`, handle it with `?`, or `.expect(...)`.
 - **Trying to format a field access or expression as a captured identifier**, like `{player.score}` — only bare variable names can be captured; expressions must be passed as arguments.
 
+## More examples
+
+### Aligning a printed receipt
+Left-aligning the item name and right-aligning the price inside a fixed width is what makes a loop of `println!` calls line up into neat columns instead of a ragged list.
+
+```rust,editable
+fn main() {
+    let items = [("Coffee", 4.50), ("Bagel", 3.25), ("Orange Juice", 2.75)];
+
+    for (name, price) in items {
+        println!("{name:<15}${price:>6.2}");
+    }
+}
+```
+
+### Drawing a download progress bar
+A fill character combined with left-alignment turns a plain string into a growing bar — the filled portion is real text, and the format spec pads the rest with `-` up to the target width.
+
+```rust,editable
+fn main() {
+    let percent = 65;
+    let filled = "#".repeat((percent / 5) as usize);
+    println!("[{:-<20}] {}%", filled, percent);
+}
+```
+
+### Printing a color as a CSS hex code
+`{:02X}` formats a byte as two uppercase hex digits, zero-padded — string that together for red, green, and blue and you get exactly the `#RRGGBB` format a browser expects.
+
+```rust,editable
+fn main() {
+    let (r, g, b) = (255u8, 99u8, 71u8); // tomato red
+    println!("#{:02X}{:02X}{:02X}", r, g, b);
+}
+```
+
+### A countdown timer's own `Display`
+Writing `Display` by hand lets `Countdown` decide it should always print as zero-padded `MM:SS`, no matter how the caller formats it — the conversion from raw seconds lives in one place.
+
+```rust,editable
+use std::fmt;
+
+struct Countdown {
+    total_seconds: u32,
+}
+
+impl fmt::Display for Countdown {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let minutes = self.total_seconds / 60;
+        let seconds = self.total_seconds % 60;
+        write!(f, "{:02}:{:02}", minutes, seconds)
+    }
+}
+
+fn main() {
+    let timer = Countdown { total_seconds: 125 };
+    println!("time remaining: {}", timer);
+}
+```
+
 ## Your turn
 
 This program has two formatting mistakes. Find them before running it.

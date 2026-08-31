@@ -56,6 +56,65 @@ Don't jump ahead to macros, `unsafe`, or async on day one. Those are advanced ro
 - **Starting with the hard, flashy features.** Macros (the `!` things), `unsafe`, and async look powerful and get talked about a lot online. They are *not* where you begin. Beginners who start there get discouraged fast. Orient with this page, then go to install and ownership.
 - **Reading a compiler "no" as failure.** When Rust rejects your code it's doing its job — catching a bug before it ships. The error message usually contains the fix. Treat red text as help, not punishment.
 
+## More examples
+
+### Spot the safety net
+In a scripting or garbage-collected language, handing a value to a new home while still holding onto the original name is completely normal. Rust asks first — and refuses to build code that tries it.
+
+```rust
+fn main() {
+    let ticket = String::from("boarding-pass-482");
+    let queue = vec![ticket];       // ticket's value moves into the vector
+    println!("Printing: {ticket}"); // ERROR: `ticket` was already moved
+    println!("Queue: {:?}", queue);
+}
+```
+
+### A systems mindset vs. a scripting mindset
+A scripting language lets you write `total = sum([19.99, 4.50, 12.00])` without a second thought. Rust wants the types settled before it builds anything at all — that upfront precision is what "systems language" buys you.
+
+```rust,editable
+fn main() {
+    let prices: [f64; 3] = [19.99, 4.50, 12.00];
+    let total: f64 = prices.iter().sum();
+    println!("Cart total: ${total:.2}");
+}
+```
+
+### Let Cargo run the whole project
+You clone someone else's Rust project and just want to try it, without first learning how its build is wired together.
+
+```bash
+cargo run
+```
+
+### No silent number conversions
+Your quantity comes from a small counter type and your price from a bigger currency type — Rust won't quietly mix them for you, so the conversion has to show up in the code.
+
+```rust,editable
+fn main() {
+    let quantity: u8 = 200;
+    let price_cents: u32 = 350;
+    let total_cents = quantity as u32 * price_cents;
+    println!("Total: {} cents", total_cents);
+}
+```
+
+### Errors as values, not exceptions
+Some of your input will be messy — a form field, a config line, a CSV column — and instead of an exception that can crash the program if nobody catches it, Rust hands you back a value you're required to look at.
+
+```rust,editable
+fn main() {
+    let entries = vec!["3", "7", "oops", "12"];
+    for text in entries {
+        match text.parse::<i32>() {
+            Ok(n) => println!("{n} is a valid number"),
+            Err(_) => println!("'{text}' is not a number -- no crash, just a value"),
+        }
+    }
+}
+```
+
 ## Your turn
 
 You can't really "break" a map, so here's a hands-on task instead. Run the program below as-is and read the output. Then change the text inside the quotes to your own sentence — maybe why *you* want to learn Rust — and run it again. Notice that nothing surprising happens: what you typed is exactly what prints. That predictability is the point.

@@ -123,6 +123,86 @@ more kinds of callers, and you can pass a `&String` right in.
 - **Confusing `&` and `*` directions.** `&` *creates* a reference (value → signpost); `*` *follows*
   one (signpost → value). If a line feels backwards, check which direction you actually want.
 
+## More examples
+
+### Comparing two prices through references
+A price-comparison tool receives two prices by reference (so it doesn't have to own them) and needs to check whether they're equal.
+
+```rust,editable
+fn same_price(a: &f64, b: &f64) -> bool {
+    *a == *b
+}
+
+fn main() {
+    let price1 = 19.99;
+    let price2 = 19.99;
+    println!("{}", same_price(&price1, &price2));
+}
+```
+
+### Returning a reference derived from a parameter
+A leaderboard function wants to hand back a reference to the top entry without copying the whole list.
+
+```rust,editable
+fn first_entry(scores: &Vec<i32>) -> &i32 {
+    &scores[0]
+}
+
+fn main() {
+    let scores = vec![99, 87, 65];
+    println!("top score: {}", first_entry(&scores));
+}
+```
+
+### Auto-deref through multiple reference layers
+Passing a reference to a reference around (common when values get threaded through iterators or nested calls) still lets you call methods normally — Rust peels off as many layers as it needs.
+
+```rust,editable
+fn main() {
+    let x: i32 = 5;
+    let r = &x;
+    let rr = &r; // rr is a &&i32
+
+    println!("{}", rr.pow(2)); // Rust auto-derefs &&i32 -> &i32 -> i32 to find pow
+}
+```
+
+### Bumping a retry counter through a mutable reference
+A network client tracks how many times it has retried a request, and the retry function only gets a `&mut i32` — not ownership — so it must dereference to change it.
+
+```rust,editable
+fn record_retry(attempts: &mut i32) {
+    *attempts += 1;
+}
+
+fn main() {
+    let mut attempts = 0;
+    record_retry(&mut attempts);
+    record_retry(&mut attempts);
+    println!("retried {} times", attempts);
+}
+```
+
+### Swapping two values through mutable references
+Keeping a scoreboard's two top entries in descending order means occasionally swapping them in place, touching nothing but the two numbers themselves.
+
+```rust,editable
+fn swap_if_out_of_order(a: &mut i32, b: &mut i32) {
+    if *a < *b {
+        let temp = *a;
+        *a = *b;
+        *b = temp;
+    }
+}
+
+fn main() {
+    let mut first = 10;
+    let mut second = 42;
+    swap_if_out_of_order(&mut first, &mut second);
+    println!("{first} {second}");
+}
+```
+
 ## Your turn
 
 This program tries to double a number through a mutable reference, but it doesn't compile. Fix it so

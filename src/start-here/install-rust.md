@@ -69,6 +69,44 @@ That's `rustup` doing its "app store" job: fetch the latest stable `rustc` and `
 - **Skipping the version check.** If you don't run `rustc --version` and `cargo --version`, you won't know whether the install actually took until something fails mid-lesson. Confirm up front — it takes five seconds.
 - **On Windows, missing the C++ build tools.** Rust needs a linker. The rustup installer tells you if you're missing the Visual Studio build tools; follow its prompt rather than ignoring it, or builds will fail with a confusing linker error.
 
+## More examples
+
+### Checking exactly what's installed
+You're on a new machine, or picking up a teammate's laptop, and want to know if `clippy` or the WebAssembly target is already there before you rely on it.
+
+```bash
+rustup component list --installed
+```
+
+### Adding a target so you can cross-compile
+You're building a CLI tool on your Mac but need to hand a binary to a colleague running Linux, or deploy it straight to a Linux server.
+
+```bash
+rustup target add x86_64-unknown-linux-gnu
+```
+
+### Pinning one project to an older toolchain
+A client's codebase was written against an older Rust release, and upgrading it isn't your call today — you don't want to change your global default just for this one folder.
+
+```bash
+rustup override set 1.75.0
+```
+
+### Refreshing a single component
+`rustfmt` starts misbehaving after an OS update, but reinstalling your whole toolchain to fix one small piece feels like overkill.
+
+```bash
+rustup component remove rustfmt
+rustup component add rustfmt
+```
+
+### Seeing what's active at a glance
+You installed a nightly toolchain months ago to try one feature, and now you're not sure which toolchain actually runs when you type `cargo build`.
+
+```bash
+rustup show
+```
+
 ## Your turn
 
 This lesson has no code to fix — the exercise is to actually install and verify. Do this now:

@@ -99,6 +99,67 @@ That prints a longer, example-filled explanation of that specific error. There's
 - **Treating warnings like errors (or ignoring them forever).** A `warning` still compiles and runs; don't think your program is broken because you see yellow. But don't let them pile up unread either — some warnings are pointing at real mistakes.
 - **Never using `rustc --explain`.** When an inline message baffles you, the code has a fuller write-up one command away. Beginners forget it exists.
 
+## More examples
+
+### A type mismatch
+You read a value from somewhere text-based — a web form, a config file, a CLI flag — and forget it arrives as text, not a number. Rust's `error[E0308]: mismatched types` names the exact line and says plainly which type it expected.
+
+```rust
+fn main() {
+    let count: i32 = "5"; // ERROR: expected `i32`, found `&str`
+    println!("count = {count}");
+}
+```
+
+### A missing semicolon that blames the next line
+Drop a `;` after a `let`, and the error often points at the line *after* your mistake instead of the mistake itself — `expected ;, found keyword let`, aimed at line 3 even though line 2 is where the semicolon is missing.
+
+```rust
+fn main() {
+    let price = 12
+    let tax = 2;
+    let total = price + tax;
+    println!("total = {total}");
+}
+```
+
+### A borrow-checker error
+You grab a reference into a vector, then try to grow the vector while that reference is still alive — something a language like C++ would quietly let you do, and quietly corrupt later.
+
+```rust
+fn main() {
+    let mut scores = vec![1, 2, 3];
+    let first = &scores[0];
+    scores.push(4); // ERROR: cannot borrow `scores` as mutable...
+    println!("{first}");
+}
+```
+
+### Wrong number of arguments
+You add a parameter to a function mid-refactor and forget to update a call site somewhere else in the file — `error[E0061]` names the function and even suggests where to add the missing argument.
+
+```rust
+fn greet(name: &str, times: u32) {
+    for _ in 0..times {
+        println!("Hello, {name}!");
+    }
+}
+
+fn main() {
+    greet("Sam"); // ERROR: this function takes 2 arguments but 1 was supplied
+}
+```
+
+### An unused variable — a warning, not an error
+Quick prototyping often leaves a variable you set up but never got around to using — the program still compiles and runs, it just gets a friendly nudge.
+
+```rust,editable
+fn main() {
+    let total = 42; // never used below -- Rust warns, but still runs
+    println!("Program finished.");
+}
+```
+
 ## Your turn
 
 This program is broken, and if you press Run the compiler will complain. **Read its message first** — find the location it points to and the `^^^^` underline — then fix the code so it prints `Score: 10`.

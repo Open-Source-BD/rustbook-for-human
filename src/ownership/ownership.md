@@ -100,6 +100,76 @@ what the **next lesson, borrowing**, is for: a way to *lend* a value without giv
 - **Reaching for `.clone()` too fast.** Cloning works but makes a full copy every time. Fine while
   learning; later you'll prefer borrowing to avoid the cost.
 
+## More examples
+
+### Round-tripping a string through a function
+Sometimes a function needs to transform a `String` and hand it right back, rather than just borrowing it — useful as one step in a small text-processing pipeline.
+
+```rust,editable
+fn shout(mut text: String) -> String {
+    text.push('!');
+    text.to_uppercase()
+}
+
+fn main() {
+    let message = String::from("hello");
+    let message = shout(message); // ownership goes in, comes back out
+    println!("{message}");
+}
+```
+
+### Moving a `Vec` into a background thread
+Spawning a worker thread to crunch a batch of numbers means handing it full ownership of that data — the main thread can't be trusted to keep using it while another thread works on it.
+
+```rust,editable
+use std::thread;
+
+fn main() {
+    let numbers = vec![1, 2, 3, 4, 5];
+
+    let handle = thread::spawn(move || {
+        let total: i32 = numbers.iter().sum();
+        println!("sum computed on another thread: {total}");
+    });
+
+    handle.join().unwrap();
+    // numbers is gone here — it was moved into the closure
+}
+```
+
+### Ownership transfer through a struct field
+Placing an order takes ownership of the customer's shipping address — the struct becomes the new home for that `String`, and it moves along with the order.
+
+```rust,editable
+struct Order {
+    item: String,
+    shipping_address: String,
+}
+
+fn main() {
+    let address = String::from("221B Baker Street");
+    let order = Order {
+        item: String::from("teapot"),
+        shipping_address: address, // address moves into the struct
+    };
+    println!("Shipping {} to {}", order.item, order.shipping_address);
+}
+```
+
+### Cloning when you genuinely need two independent copies
+A template config should stay untouched while you customize a copy for a specific environment — cloning gives you two `Vec`s that can each change independently.
+
+```rust,editable
+fn main() {
+    let template = vec![String::from("debug=false"), String::from("port=80")];
+    let mut staging = template.clone();
+    staging.push(String::from("env=staging"));
+
+    println!("template: {:?}", template); // untouched
+    println!("staging: {:?}", staging);   // has the extra line
+}
+```
+
 ## Your turn
 
 This program doesn't compile — it uses `s` after moving it into `greet`. Fix it so it prints the

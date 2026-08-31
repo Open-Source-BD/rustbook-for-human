@@ -159,6 +159,92 @@ That's exactly how the real `vec!` macro in the standard library works. You've n
 - **Using the wrong fragment specifier.** Passing `1 + 1` where a pattern expects `:ident`, or a bare name where it expects `:ty`, fails to match — even though both "look like code" to you, the macro matcher is strict about the shape.
 - **Reaching for a macro when a function would do.** Macros are harder to read and debug than functions, and tooling (autocomplete, go-to-definition) understands them less well. Use a macro only for what a function genuinely can't do — a variable number of arguments, or generating new code like struct fields or match arms.
 
+## More examples
+
+### Picking the cheaper of two prices
+A `smaller!` macro that expands to an `if`/`else` reads like a tiny inline function, but works on any comparable expression without committing to one type.
+
+```rust,editable
+macro_rules! smaller {
+    ($a:expr, $b:expr) => {
+        if $a < $b { $a } else { $b }
+    };
+}
+
+fn main() {
+    let cheapest = smaller!(19.99, 24.50);
+    println!("cheapest option: {cheapest}");
+}
+```
+
+### A tagged logging macro
+Typing `println!("[{}] {}", ...)` at every call site gets old fast — a `log!` macro bakes the tag format in once and lets `stringify!` turn the bare level name into text.
+
+```rust,editable
+macro_rules! log {
+    ($level:ident, $msg:expr) => {
+        println!("[{}] {}", stringify!($level), $msg);
+    };
+}
+
+fn main() {
+    log!(INFO, "server started");
+    log!(ERROR, "connection refused");
+}
+```
+
+### Building a settings map with `key => value` pairs
+Repetition isn't just for lists — `$( $key:expr => $value:expr ),*` matches a whole comma-separated run of key-value pairs and inserts each one into a `HashMap` in one expansion.
+
+```rust,editable
+use std::collections::HashMap;
+
+macro_rules! settings {
+    ($($key:expr => $value:expr),* $(,)?) => {{
+        let mut map = HashMap::new();
+        $( map.insert($key, $value); )*
+        map
+    }};
+}
+
+fn main() {
+    let config = settings! {
+        "theme" => "dark",
+        "font_size" => "14",
+    };
+    println!("theme = {}", config["theme"]);
+}
+```
+
+### Generating getter methods for a struct
+Macros aren't limited to expressions — matching a struct's field list and expanding an `impl` block generates a getter for every field without typing each one by hand.
+
+```rust,editable
+struct Player {
+    name: String,
+    score: u32,
+}
+
+macro_rules! getters {
+    ($struct_name:ident { $($field:ident: $ty:ty),* $(,)? }) => {
+        impl $struct_name {
+            $(
+                fn $field(&self) -> &$ty {
+                    &self.$field
+                }
+            )*
+        }
+    };
+}
+
+getters!(Player { name: String, score: u32 });
+
+fn main() {
+    let p = Player { name: "Ada".to_string(), score: 42 };
+    println!("{} has {} points", p.name(), p.score());
+}
+```
+
 ## Your turn
 
 This macro is supposed to build a `Vec` from any number of items, the way `vec!` does — but it only has a rule for a single expression, and it's being called with three. Fix it so `my_vec![1, 2, 3]` works.

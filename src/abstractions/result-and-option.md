@@ -153,6 +153,84 @@ Chained together, combinators read like a pipeline: `text.parse::<i32>().ok().fi
 - **Confusing `Option` with `Result`.** Use `Option` when something is simply *absent* (no error to report); use `Result` when there's a *reason it failed* you want to carry. `.ok_or()` and `.ok()` exist precisely because this choice sometimes needs to change mid-pipeline.
 - **Ignoring a `Result` entirely.** Rust warns if you drop a `Result` on the floor (`unused Result that must be used`). Handle it, propagate it, or explicitly `let _ = ...` if you truly mean to ignore it.
 
+## More examples
+
+### Chain a parse, then a division that can also fail
+Two fallible steps in a row — parsing text, then dividing (which fails on zero) — chain naturally with `.and_then()` instead of nested `match`.
+
+```rust,editable
+fn safe_divide(a: i32, b: i32) -> Option<i32> {
+    if b == 0 { None } else { Some(a / b) }
+}
+
+fn main() {
+    let result = "20".parse::<i32>().ok().and_then(|n| safe_divide(n, 4));
+    println!("{:?}", result); // Some(5)
+
+    let by_zero = "20".parse::<i32>().ok().and_then(|n| safe_divide(n, 0));
+    println!("{:?}", by_zero); // None
+}
+```
+
+### Fall back to a sensible default for a missing setting
+When a config value is simply absent, `.unwrap_or_default()` grabs the type's default (`0` for numbers, `""` for strings) instead of making you spell out a fallback.
+
+```rust,editable
+fn main() {
+    let raw_config: Option<u32> = None; // key was missing from the config file
+    let timeout_secs: u32 = raw_config.unwrap_or_default();
+
+    println!("timeout: {timeout_secs}s"); // 0 -- u32's default
+}
+```
+
+### Handle one special case by hand, `?` for the rest
+Not every fallible step deserves the same treatment — here an empty cart is handled explicitly, while everything else flows through `?` normally.
+
+```rust,editable
+fn checkout_total(cart_total: &str) -> Result<i32, String> {
+    let total: i32 = match cart_total {
+        "0" => return Err("cart is empty".to_string()), // one special case, by hand
+        text => text.parse().map_err(|_| "bad total".to_string())?, // normal path uses ?
+    };
+    Ok(total + 5) // add flat shipping
+}
+
+fn main() {
+    println!("{:?}", checkout_total("40"));   // Ok(45)
+    println!("{:?}", checkout_total("0"));    // Err("cart is empty")
+    println!("{:?}", checkout_total("oops")); // Err("bad total")
+}
+```
+
+### Reject a value that fails a format check
+`.filter()` on `Option` isn't just for numeric ranges — it works for any predicate, like rejecting a username that contains spaces.
+
+```rust,editable
+fn main() {
+    let username: Option<&str> = Some("ferris the crab");
+
+    let valid = username.filter(|name| !name.contains(' '));
+
+    println!("{:?}", valid); // None -- contains a space
+}
+```
+
+### Build a receipt line with chained `.map()`s
+When each step can't fail, chaining multiple `.map()` calls reads like a small pipeline — compute a price, then format it, all without unwrapping in between.
+
+```rust,editable
+fn main() {
+    let quantity: Option<i32> = Some(3);
+
+    let receipt_line = quantity
+        .map(|q| q * 25)              // price per item is $25
+        .map(|total| format!("${total}"));
+
+    println!("{:?}", receipt_line); // Some("$75")
+}
+```
+
 ## Your turn
 
 This function should parse a price string, apply a 10% discount, and fall back to `0` if parsing fails — but it doesn't compile.

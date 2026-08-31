@@ -93,6 +93,107 @@ It goes wrong when `+` does something a reader wouldn't guess from the symbol â€
 - **Forgetting most `std::ops` traits take `self` by value.** If your type isn't `Copy`, `p1 + p2` moves `p1` (and `p2`), so you can't use them again afterward. Either derive `Copy` for small value-like types, or implement the operator for references (`impl Add for &Point`) so operands are borrowed instead of consumed.
 - **Mismatched `Output` type.** `type Output = Point` must match what `add`'s body actually returns and what call sites expect. A mismatch shows up as a type error at the `+` expression itself, which can look confusing if you don't already know operators are trait calls.
 
+## More examples
+
+### Totaling a receipt in cents
+A `Money` type that implements `Add` lets a checkout add up line items with plain `+`, instead of a `.total()` method that has to be remembered and called separately.
+
+```rust,editable
+use std::ops::Add;
+
+#[derive(Clone, Copy, Debug)]
+struct Money { cents: u32 }
+
+impl Add for Money {
+    type Output = Money;
+    fn add(self, rhs: Money) -> Money {
+        Money { cents: self.cents + rhs.cents }
+    }
+}
+
+fn main() {
+    let coffee = Money { cents: 350 };
+    let muffin = Money { cents: 275 };
+    let total = coffee + muffin;
+    println!("total: ${}.{:02}", total.cents / 100, total.cents % 100);
+}
+```
+
+### Applying a speed boost power-up
+`Mul<f64>` lets a game scale a velocity by a plain number, so a power-up reads as `speed * 2.5` instead of a helper function that rebuilds the struct by hand.
+
+```rust,editable
+use std::ops::Mul;
+
+#[derive(Clone, Copy, Debug)]
+struct Velocity { dx: f64, dy: f64 }
+
+impl Mul<f64> for Velocity {
+    type Output = Velocity;
+    fn mul(self, factor: f64) -> Velocity {
+        Velocity { dx: self.dx * factor, dy: self.dy * factor }
+    }
+}
+
+fn main() {
+    let base_speed = Velocity { dx: 2.0, dy: 1.0 };
+    let boosted = base_speed * 2.5; // speed boost power-up
+    println!("{:?}", boosted);
+}
+```
+
+### A playlist that loops when it runs out of tracks
+`Index` doesn't have to mean "array position" â€” wrapping the index with `%` inside `index()` makes `playlist[i]` loop back to the start for any `i`, which is exactly how repeat playback behaves.
+
+```rust,editable
+use std::ops::Index;
+
+struct Playlist {
+    tracks: Vec<String>,
+}
+
+impl Index<usize> for Playlist {
+    type Output = String;
+    fn index(&self, i: usize) -> &String {
+        &self.tracks[i % self.tracks.len()] // wraps around for looping playback
+    }
+}
+
+fn main() {
+    let playlist = Playlist {
+        tracks: vec!["Intro".to_string(), "Solo".to_string(), "Outro".to_string()],
+    };
+
+    for i in 0..5 {
+        println!("track {}: {}", i, playlist[i]);
+    }
+}
+```
+
+### Deducting a shipped order from warehouse stock
+`Sub` makes "what's left after this order ships" read the same way subtraction reads for ordinary numbers, instead of a `.deduct(order)` method.
+
+```rust,editable
+use std::ops::Sub;
+
+#[derive(Clone, Copy, Debug)]
+struct Stock { units: u32 }
+
+impl Sub for Stock {
+    type Output = Stock;
+    fn sub(self, rhs: Stock) -> Stock {
+        Stock { units: self.units - rhs.units }
+    }
+}
+
+fn main() {
+    let warehouse = Stock { units: 120 };
+    let shipped_order = Stock { units: 45 };
+    let remaining = warehouse - shipped_order;
+    println!("{:?}", remaining);
+}
+```
+
 ## Your turn
 
 `Point` implements `Add`, but this code also tries to use `+=`. It doesn't compile:

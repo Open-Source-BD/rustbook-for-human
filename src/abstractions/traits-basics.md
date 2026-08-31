@@ -211,6 +211,132 @@ If you come from Java or Python, resist "trait = base class." A trait is not a p
 - **Calling a trait method without the trait in scope.** If a trait lives in another module or crate, you must `use` it before its methods are callable on a value, even if the type already implements it. The error is `method not found`, fixed with `use path::to::Trait;`.
 - **Thinking traits carry data.** Traits describe behavior, not fields. If you want shared *state*, that's what a struct is for — a trait can require a method that exposes the state, but it can't hold the state itself.
 
+## More examples
+
+### Billing plans with different pricing
+A subscription app needs to compute "how much does this cost per month" the same way for a free-tier plan and a per-seat plan — each with completely different math behind that one shared method.
+
+```rust,editable
+trait Billable {
+    fn monthly_cost(&self) -> f64;
+}
+
+struct Basic;
+struct Pro { seats: u32 }
+
+impl Billable for Basic {
+    fn monthly_cost(&self) -> f64 { 9.99 }
+}
+impl Billable for Pro {
+    fn monthly_cost(&self) -> f64 { 19.99 * self.seats as f64 }
+}
+
+fn main() {
+    let basic = Basic;
+    let pro = Pro { seats: 3 };
+    println!("basic: ${:.2}", basic.monthly_cost());
+    println!("pro: ${:.2}", pro.monthly_cost());
+}
+```
+
+### A default you can override
+Most log lines are just "info," but errors need different formatting. A default method covers the common case for free; one type opts out and writes its own.
+
+```rust,editable
+trait Logger {
+    fn log(&self, msg: &str) -> String {
+        format!("[INFO] {}", msg)
+    }
+}
+
+struct Console;
+struct ErrorLogger;
+
+impl Logger for Console {} // uses the default as-is
+
+impl Logger for ErrorLogger {
+    fn log(&self, msg: &str) -> String {
+        format!("[ERROR] {}", msg)
+    }
+}
+
+fn main() {
+    println!("{}", Console.log("server started"));
+    println!("{}", ErrorLogger.log("disk full"));
+}
+```
+
+### Requiring two abilities at once
+Sometimes a function needs a type it can both print for debugging *and* duplicate — that's two separate promises stacked into one bound.
+
+```rust,editable
+use std::fmt::Debug;
+
+fn snapshot<T: Debug + Clone>(item: T) -> (T, T) {
+    println!("snapshotting: {:?}", item);
+    (item.clone(), item)
+}
+
+fn main() {
+    let (a, b) = snapshot(vec![1, 2, 3]);
+    println!("{:?} {:?}", a, b);
+}
+```
+
+### A method that leans on another method
+`full_report` doesn't know how to compute a name or a salary itself — it just calls the *other* required methods on `self` and stitches the results together.
+
+```rust,editable
+trait Employee {
+    fn name(&self) -> String;
+    fn salary(&self) -> f64;
+
+    fn full_report(&self) -> String {
+        format!("{} earns ${:.2}/mo", self.name(), self.salary())
+    }
+}
+
+struct Contractor { name: String, rate: f64 }
+
+impl Employee for Contractor {
+    fn name(&self) -> String { self.name.clone() }
+    fn salary(&self) -> f64 { self.rate * 160.0 }
+}
+
+fn main() {
+    let c = Contractor { name: String::from("Dana"), rate: 45.0 };
+    println!("{}", c.full_report());
+}
+```
+
+### One function, many unrelated "can-do" types
+A shape and an invoice have nothing in common as types — but both can satisfy the same trait bound as long as they each keep the promise in their own way.
+
+```rust,editable
+trait Describe {
+    fn describe(&self) -> String;
+}
+
+struct Circle { r: f64 }
+struct Invoice { id: u32 }
+
+impl Describe for Circle {
+    fn describe(&self) -> String { format!("circle r={}", self.r) }
+}
+impl Describe for Invoice {
+    fn describe(&self) -> String { format!("invoice #{}", self.id) }
+}
+
+fn log_it(item: &impl Describe) {
+    println!("LOG: {}", item.describe());
+}
+
+fn main() {
+    log_it(&Circle { r: 2.0 });
+    log_it(&Invoice { id: 4021 });
+}
+```
+
 ## Your turn
 
 This program wants `announce` to work for any type with a `summarize` method, but it doesn't compile.

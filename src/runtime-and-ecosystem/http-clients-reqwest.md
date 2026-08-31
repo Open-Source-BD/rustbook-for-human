@@ -105,6 +105,90 @@ Now any request through that client that takes longer than 10 seconds fails with
 - **No timeout set.** A slow or dead server can hang your request indefinitely. Set `.timeout(...)` on the client or the request.
 - **Forgetting `.await`.** Every `reqwest` call here is async; a missing `.await` gives you a `Future` that never runs, not the value you wanted — the compiler flags the type mismatch.
 
+## More examples
+
+### Placing an order in a checkout flow
+Creating something on a server, not just reading it, means POSTing a body — `.json(&order)` serializes the struct straight into the request, and `.json::<OrderConfirmation>()` deserializes what comes back.
+
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize)]
+struct NewOrder {
+    sku: String,
+    quantity: u32,
+}
+
+#[derive(Deserialize, Debug)]
+struct OrderConfirmation {
+    id: u64,
+    status: String,
+}
+
+async fn place_order(client: &reqwest::Client) -> reqwest::Result<OrderConfirmation> {
+    let order = NewOrder { sku: "sku-42".to_string(), quantity: 3 };
+
+    let confirmation = client
+        .post("https://api.example.com/orders")
+        .json(&order)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<OrderConfirmation>()
+        .await?;
+
+    Ok(confirmation)
+}
+```
+
+### Authenticating against a private API
+Most real APIs won't answer without proof of who's asking — `.header("Authorization", ...)` attaches a bearer token to the request the same way a browser would.
+
+```rust
+async fn fetch_private_repo(client: &reqwest::Client, token: &str) -> reqwest::Result<String> {
+    let body = client
+        .get("https://api.github.com/user/repos")
+        .header("Authorization", format!("Bearer {token}"))
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+
+    Ok(body)
+}
+```
+
+### Downloading a user's avatar image
+Not every response is text — an avatar upload endpoint needs the raw bytes untouched, so `.bytes()` skips the JSON/text parsing entirely and hands back the file as-is.
+
+```rust
+async fn download_avatar(client: &reqwest::Client, url: &str) -> reqwest::Result<Vec<u8>> {
+    let bytes = client
+        .get(url)
+        .send()
+        .await?
+        .error_for_status()?
+        .bytes()
+        .await?;
+
+    Ok(bytes.to_vec())
+}
+```
+
+### Cleaning up a stale session on logout
+A logout button doesn't need a response body back — just confirmation the server did it — so a DELETE call that discards everything but the status code is enough.
+
+```rust
+async fn delete_session(client: &reqwest::Client, session_id: &str) -> reqwest::Result<()> {
+    let url = format!("https://api.example.com/sessions/{session_id}");
+
+    client.delete(&url).send().await?.error_for_status()?;
+
+    Ok(())
+}
+```
+
 ## Your turn
 
 This function fetches a user profile by id. When the user doesn't exist, the API responds `404 Not Found` with a body like `{"error": "not found"}` — but the code below never checks the status before trying to parse a `User` out of it.

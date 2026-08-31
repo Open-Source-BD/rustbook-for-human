@@ -105,6 +105,91 @@ what it says.
 - **Fighting the formatter by hand.** Manually re-aligning code that `cargo fmt` will just rewrite
   wastes effort and muddies your diffs. Let the tool own layout.
 
+## More examples
+
+### Clippy catching a needless `.clone()`
+
+Cloning "just to be safe" is a common habit, but if the function only ever *reads* the data, a
+borrow does the same job for free — no copy of the whole `Vec<String>` needed.
+
+```rust,editable
+fn total_len(names: &[String]) -> usize {
+    names.iter().map(|n| n.len()).sum()
+}
+
+fn main() {
+    let names = vec![String::from("Ferris"), String::from("Corro")];
+
+    // clippy: "redundant clone" -- names is only read here, no need to clone it
+    let total = total_len(&names.clone());
+    println!("{total}");
+
+    // after the fix: just borrow, no clone at all
+    let total2 = total_len(&names);
+    println!("{total2}");
+}
+```
+
+Both print the same number. The fixed version skips allocating a whole second copy of every string
+just to read their lengths.
+
+### Simplifying `if x == true`
+
+This is clippy's most famous catch, and a good one to internalize early — comparing a `bool` to
+`true` is never clearer than just using the `bool` itself:
+
+```rust,editable
+fn main() {
+    let logged_in = true;
+
+    // clippy: "equality checks against true are unnecessary"
+    if logged_in == true {
+        println!("welcome back (old way)");
+    }
+
+    // after the fix
+    if logged_in {
+        println!("welcome back (idiomatic)");
+    }
+}
+```
+
+### Silencing one lint on purpose, with a reason
+
+Sometimes clippy's default advice genuinely doesn't fit — here, an index-based loop is intentional
+because the code needs the index (for a rank number) *and* the value, not just the value. Rather
+than fight the lint or ignore the warning silently, allow it locally and say why:
+
+```rust,editable
+fn main() {
+    let scores = vec![10, 20, 30];
+
+    // We need both the index (for a rank) and the value, so the usual
+    // "iterate directly" advice doesn't fit -- silence the lint and say why.
+    #[allow(clippy::needless_range_loop)]
+    for i in 0..scores.len() {
+        println!("rank {}: {}", i + 1, scores[i]);
+    }
+}
+```
+
+Putting the `#[allow(...)]` right above the code it applies to (rather than at the top of the file)
+keeps the exception narrow and documents the reasoning exactly where a future reader will wonder
+about it.
+
+### Enforcing clippy in CI
+
+A warning nobody reads doesn't stop bad code from merging. Many teams turn clippy's warnings into
+hard failures for automated checks, so a pull request can't land until the lints are clean:
+
+```bash
+cargo clippy -- -D warnings
+```
+
+`-D warnings` means "deny warnings" — clippy now exits with a non-zero status if it finds anything
+to flag, which is exactly what a CI pipeline needs to fail the build instead of quietly logging a
+warning nobody scrolls up to see.
+
 ## Your turn
 
 Clippy can't run on the Playground, but this program shows two things it would flag. The code

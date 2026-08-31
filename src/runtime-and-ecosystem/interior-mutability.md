@@ -158,6 +158,118 @@ You saw `Arc<Mutex<T>>` in the concurrency lesson — that's the multi-threaded 
 - **Confusing `Cell` and `RefCell`.** `Cell` is for `Copy` values via `get`/`set` and never panics;
   `RefCell` lends references and enforces borrows at runtime.
 
+## More examples
+
+### A logger that records messages through a shared `&self`
+Logging methods usually take `&self`, not `&mut self`, so every caller can hold a shared reference — `RefCell` lets `log` push onto an internal `Vec` anyway.
+
+```rust,editable
+use std::cell::RefCell;
+
+struct Logger {
+    messages: RefCell<Vec<String>>,
+}
+
+impl Logger {
+    fn new() -> Self {
+        Logger { messages: RefCell::new(Vec::new()) }
+    }
+
+    fn log(&self, message: &str) {
+        self.messages.borrow_mut().push(message.to_string());
+    }
+}
+
+fn main() {
+    let logger = Logger::new();
+    logger.log("server started");
+    logger.log("listening on port 8080");
+
+    println!("{:?}", logger.messages.borrow());
+}
+```
+
+### Counting cache hits inside a read-only lookup
+A cache's `get` method looks read-only from the outside, but tracking how often it's hit needs to mutate a counter every call — `Cell` handles that without changing `get`'s `&self` signature.
+
+```rust,editable
+use std::cell::Cell;
+
+struct Cache {
+    value: i32,
+    hits: Cell<u32>,
+}
+
+impl Cache {
+    fn get(&self) -> i32 {
+        self.hits.set(self.hits.get() + 1);
+        self.value
+    }
+}
+
+fn main() {
+    let cache = Cache { value: 42, hits: Cell::new(0) };
+
+    cache.get();
+    cache.get();
+    cache.get();
+
+    println!("value looked up {} times", cache.hits.get());
+}
+```
+
+### Two systems mutating shared game state
+A damage system and a healing system both need to change the same player's health — `Rc<RefCell<Player>>` lets both hold an owner and mutate the same struct instead of copying it back and forth.
+
+```rust,editable
+use std::cell::RefCell;
+use std::rc::Rc;
+
+struct Player {
+    health: i32,
+}
+
+fn main() {
+    let player = Rc::new(RefCell::new(Player { health: 100 }));
+
+    let damage_system = Rc::clone(&player);
+    let healing_system = Rc::clone(&player);
+
+    damage_system.borrow_mut().health -= 30;
+    healing_system.borrow_mut().health += 10;
+
+    println!("player health: {}", player.borrow().health);
+}
+```
+
+### Flipping a maintenance-mode flag read by many handlers
+Every request handler needs to check the same maintenance flag, but none of them own it — `Cell<bool>` lets any of them read it and lets one admin action flip it.
+
+```rust,editable
+use std::cell::Cell;
+
+struct AppState {
+    maintenance_mode: Cell<bool>,
+}
+
+fn handle_request(state: &AppState) {
+    if state.maintenance_mode.get() {
+        println!("503: site is under maintenance");
+    } else {
+        println!("200: serving request normally");
+    }
+}
+
+fn main() {
+    let state = AppState { maintenance_mode: Cell::new(false) };
+
+    handle_request(&state);
+
+    state.maintenance_mode.set(true);
+    handle_request(&state);
+}
+```
+
 ## Your turn
 
 This program wants to increment a counter that lives behind a shared `RefCell`, then print it. It

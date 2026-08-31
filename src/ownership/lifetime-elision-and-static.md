@@ -147,6 +147,94 @@ Uncommenting `print_it(borrowed)` fails to compile: `&text` only lives as long a
 - **Expecting elision to work with two-or-more distinct input references and no `&self`.** The compiler won't guess which input the output borrows from; that's exactly when you must annotate explicitly, like `longest<'a>` above.
 - **Forgetting a struct that holds a reference needs a lifetime parameter at all.** `struct Excerpt { text: &str }` alone doesn't compile — the compiler demands a named lifetime so it knows how long an `Excerpt` is allowed to live.
 
+## More examples
+
+### Two elided input lifetimes with no relation
+A logging helper takes a tag and a message as separate references but never ties them together in its return type — the compiler gives each its own lifetime and never needs them to match.
+
+```rust,editable
+fn longer_len(a: &str, b: &str) -> usize {
+    // desugars to fn longer_len<'a, 'b>(a: &'a str, b: &'b str) -> usize
+    // 'a and 'b never need to relate, because nothing borrows from either in the return
+    a.len().max(b.len())
+}
+
+fn main() {
+    let tag = "INFO";
+    let message = "server started";
+    println!("{}", longer_len(tag, message));
+}
+```
+
+### A `'static` string constant
+An app's version string is baked into the binary and needs to be readable from anywhere, for the entire run of the program.
+
+```rust,editable
+static APP_VERSION: &str = "2.4.0";
+
+fn main() {
+    println!("running version {APP_VERSION}");
+}
+```
+
+### A generic function with a `T: 'static` bound
+A simple type-erased cache needs to guarantee that whatever you hand it doesn't contain a short-lived borrow, so it can hold onto the value safely.
+
+```rust,editable
+use std::any::Any;
+
+fn store<T: 'static>(value: T) -> Box<dyn Any> {
+    Box::new(value)
+}
+
+fn main() {
+    let boxed = store(String::from("cached result"));
+    if let Some(text) = boxed.downcast_ref::<String>() {
+        println!("{text}");
+    }
+}
+```
+
+### A struct with a lifetime parameter used across two methods
+A support ticket wraps a borrowed code string and offers two different views on it — a getter and a VIP check — both tied to the same lifetime.
+
+```rust,editable
+struct Ticket<'a> {
+    code: &'a str,
+}
+
+impl<'a> Ticket<'a> {
+    fn code(&self) -> &str {
+        self.code
+    }
+
+    fn is_vip(&self) -> bool {
+        self.code.starts_with("VIP")
+    }
+}
+
+fn main() {
+    let raw = String::from("VIP-1234");
+    let ticket = Ticket { code: &raw };
+    println!("{} vip={}", ticket.code(), ticket.is_vip());
+}
+```
+
+### Where `'static` shows up for real: spawning a thread
+`std::thread::spawn` requires everything the closure captures to be `'static`, because the new thread might outlive the function that spawned it — an owned value satisfies that automatically.
+
+```rust,editable
+use std::thread;
+
+fn main() {
+    let report = String::from("nightly build passed");
+    let handle = thread::spawn(move || {
+        println!("{report}");
+    });
+    handle.join().unwrap();
+}
+```
+
 ## Your turn
 
 This struct is supposed to hold a borrowed word, but it's missing something.

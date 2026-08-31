@@ -146,6 +146,95 @@ Hand-write the trait instead of deriving when the mechanical, field-by-field beh
 - **Assuming a missing field trait gets silently skipped.** It doesn't — the whole `#[derive(...)]` fails to compile if any field lacks that trait.
 - **Assuming derived ordering compares "by importance."** It compares fields in the order you *wrote* them in the struct — reorder the fields to change sort priority, or hand-write `Ord`.
 
+## More examples
+
+### Snapshotting a game save before risking it
+`Clone` gives a checkpoint an independent copy to fall back to — mutating `current` afterward can't touch `checkpoint`, because they no longer share any data.
+
+```rust,editable
+#[derive(Debug, Clone)]
+struct GameSave {
+    level: u32,
+    hp: u32,
+}
+
+fn main() {
+    let checkpoint = GameSave { level: 3, hp: 80 };
+    let mut current = checkpoint.clone(); // keep the checkpoint safe before risking hp
+    current.hp -= 30; // took damage
+
+    println!("checkpoint: {:?}", checkpoint);
+    println!("current: {:?}", current);
+}
+```
+
+### Deduplicating scanned badge IDs at a gate
+`PartialEq`, `Eq`, and `Hash` together are what let a struct sit inside a `HashSet` — here that's the difference between silently re-admitting a badge and catching a repeat scan.
+
+```rust,editable
+use std::collections::HashSet;
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+struct BadgeId(u32);
+
+fn main() {
+    let mut checked_in: HashSet<BadgeId> = HashSet::new();
+    let scans = [BadgeId(101), BadgeId(102), BadgeId(101), BadgeId(103)];
+
+    for badge in scans {
+        if !checked_in.insert(badge) {
+            println!("badge {} already checked in", badge.0);
+        }
+    }
+    println!("{} unique badges scanned", checked_in.len());
+}
+```
+
+### Sorting a to-do list by priority
+Deriving `Ord` on `Task` means `.sort()` just works — it compares `priority` first because that's the field declared first, exactly the order a to-do list should sort by.
+
+```rust,editable
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Task {
+    priority: u8,
+    name: String,
+}
+
+fn main() {
+    let mut todos = vec![
+        Task { priority: 2, name: String::from("write report") },
+        Task { priority: 1, name: String::from("fix critical bug") },
+        Task { priority: 3, name: String::from("reply to email") },
+    ];
+
+    todos.sort();
+
+    for task in &todos {
+        println!("[{}] {}", task.priority, task.name);
+    }
+}
+```
+
+### Defaulting an API pagination request
+`Default` plus `..Default::default()` lets a request override just the fields a caller cares about — here, only the page number — while every other field falls back sensibly.
+
+```rust,editable
+#[derive(Debug, Default)]
+struct Pagination {
+    page: u32,
+    per_page: u32,
+    sort_desc: bool,
+}
+
+fn main() {
+    let default_request = Pagination::default();
+    println!("{:?}", default_request);
+
+    let page_two = Pagination { page: 2, ..Default::default() };
+    println!("{:?}", page_two);
+}
+```
+
 ## Your turn
 
 This struct tries to derive `Copy`, but one of its fields makes that impossible.

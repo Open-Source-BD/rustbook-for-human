@@ -135,6 +135,79 @@ into a line.
 - **Mixing logs into stdout output.** For a CLI, send logs to stderr so they don't corrupt the
   program's real stdout result (see the CLI lesson).
 
+## More examples
+
+### Order checkout events
+An e-commerce checkout can attach the order id and total as structured fields, so later you can query "every event where order_id = 4821" instead of grepping a sentence.
+
+```rust
+use tracing::info;
+
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    let order_id = 4821;
+    let total = 59.97;
+
+    info!(order_id, total, "order placed");
+}
+```
+
+### A span per background job
+A job queue worker wraps each job in a span, so every log line it emits while running — start, progress, finish — is automatically tagged with that job's id, even with many workers running at once.
+
+```rust
+use tracing::{info, info_span};
+
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    let job_id = 17;
+    let span = info_span!("job", job_id);
+    let _guard = span.enter();
+
+    info!("processing started");
+    info!(rows_processed = 240, "processing finished");
+}
+```
+
+### Flagging repeated login failures
+An auth service can warn on suspicious activity — like a username and attempt count — without ever logging the password itself.
+
+```rust
+use tracing::warn;
+
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    let username = "shaon";
+    let attempt = 3;
+
+    warn!(username, attempt, "failed login attempt");
+}
+```
+
+### Skipping bad rows during a CSV import
+A batch importer can log each row at `debug` and escalate only the rows that fail to parse to `error`, so a normal run stays quiet and a broken one points straight at the bad data.
+
+```rust
+use tracing::{debug, error};
+
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    let rows = ["1,Alice", "bad-row", "3,Carol"];
+
+    for (i, row) in rows.iter().enumerate() {
+        if row.split(',').count() != 2 {
+            error!(row_number = i, row, "skipping malformed row");
+        } else {
+            debug!(row_number = i, "row parsed");
+        }
+    }
+}
+```
+
 ## Your turn
 
 This is a **spot-the-bug**, since `tracing` can't run on the Playground. A beginner runs this and

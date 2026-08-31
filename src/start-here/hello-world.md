@@ -74,6 +74,62 @@ dropped into your text.
 - **Mismatched quotes or braces.** Every `"` needs a closing `"`, every `{` a closing `}`. The
   compiler points at the line where it got confused.
 
+## More examples
+
+### Printing to stderr for diagnostics
+Real programs often split their output: the actual result goes to one stream, debug notes go to another, so a script piping your output doesn't get polluted with noise.
+
+```rust,editable
+fn main() {
+    println!("Result: 42");
+    eprintln!("[debug] computed via loop, took 3 steps");
+}
+```
+
+### A greeting with a hardcoded name
+Setup scripts and installers love a little personal touch, even before you've learned how to take real input from a user.
+
+```rust,editable
+fn main() {
+    let user = "Alice";
+    println!("Welcome aboard, {user}! Let's get you set up.");
+}
+```
+
+### Formatting a receipt line
+A `{}` placeholder isn't limited to printing a value back out untouched — you can drop in the result of a calculation too.
+
+```rust,editable
+fn main() {
+    let item = "coffee";
+    let price = 4;
+    let qty = 2;
+    println!("{qty}x {item} = ${}", price * qty);
+}
+```
+
+### A startup banner
+Command-line tools often print a little header before they get to work, so you know what's running and that it actually started.
+
+```rust,editable
+fn main() {
+    println!("=================================");
+    println!(" MyApp v1.0 -- starting up");
+    println!("=================================");
+}
+```
+
+### A quick unit conversion
+`println!` doubles as a fine one-off calculator display, long before you've learned functions or real user input.
+
+```rust,editable
+fn main() {
+    let celsius = 24;
+    let fahrenheit = celsius * 9 / 5 + 32;
+    println!("{celsius}C is {fahrenheit}F");
+}
+```
+
 ## Your turn
 
 This program is broken in **two** ways. Fix it so it prints `Hello, Rust!` on its own line. Press

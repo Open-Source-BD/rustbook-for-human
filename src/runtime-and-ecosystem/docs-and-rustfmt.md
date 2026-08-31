@@ -123,6 +123,106 @@ It documents your crate *and* your dependencies, all cross-linked, styled exactl
 - **Documenting the obvious and skipping the tricky.** A doc comment that restates the function
   name adds no value; spend the words on the surprising behavior and the edge cases.
 
+## More examples
+
+### A doc comment that doubles as a test
+
+Real crates lean on `# Examples` constantly, because the example *is* the test — if you ever change
+the function and break the promise in the docs, `cargo test` tells you immediately.
+
+```rust,editable
+/// Converts a temperature from Celsius to Fahrenheit.
+///
+/// # Examples
+///
+/// ```
+/// let f = celsius_to_fahrenheit(0.0);
+/// assert_eq!(f, 32.0);
+/// ```
+fn celsius_to_fahrenheit(c: f64) -> f64 {
+    c * 9.0 / 5.0 + 32.0
+}
+
+fn main() {
+    println!("{}", celsius_to_fahrenheit(100.0));
+}
+```
+
+### Hiding setup lines in a doctest
+
+Sometimes an example needs a few lines of scaffolding that would be noise for a reader. Prefix a
+line with `# ` inside the code block and `cargo doc` hides it from the rendered page — but `cargo
+test` still compiles and runs it:
+
+```rust
+/// A shopping cart total, in cents.
+///
+/// # Examples
+///
+/// ```
+/// # struct Cart { cents: u32 }
+/// # impl Cart { fn total(&self) -> u32 { self.cents } }
+/// let cart = Cart { cents: 1999 };
+/// assert_eq!(cart.total(), 1999);
+/// ```
+struct Cart {
+    cents: u32,
+}
+```
+
+The reader sees a clean two-line example; the doctest quietly checks the whole thing still works.
+
+### Customizing rustfmt's line width
+
+`rustfmt` follows sensible defaults out of the box, but a team can tune them project-wide by
+dropping a `rustfmt.toml` next to `Cargo.toml`. Every `cargo fmt` run in that project then follows
+these settings instead of the defaults:
+
+```toml
+# rustfmt.toml
+max_width = 100
+tab_spaces = 4
+use_small_heuristics = "Max"
+```
+
+No flags to remember, no per-developer settings — everyone who runs `cargo fmt` in this project
+gets the same 100-column style automatically.
+
+### Browsing your own crate's docs like a visitor
+
+Once you've written a few `///` comments, generate the site and actually read it the way a user of
+your crate would:
+
+```bash
+cargo doc --open
+```
+
+This builds the HTML docs for your crate *and* every dependency, then opens your default browser
+straight to your crate's page. It's the fastest way to catch a confusing doc comment — read it as a
+stranger would, not as the person who just wrote the code.
+
+### A module-level doc comment for context
+
+`//!` at the top of a file introduces the *whole module* before a reader sees any individual item —
+handy for explaining scope, like "this file only validates data, it never touches the database":
+
+```rust,editable
+//! Small helpers for validating usernames before they hit the database.
+//!
+//! Keep this module free of database or network code — just plain checks.
+
+/// Returns `true` if a username is between 3 and 20 characters and has no spaces.
+fn is_valid_username(name: &str) -> bool {
+    let len = name.chars().count();
+    (3..=20).contains(&len) && !name.contains(' ')
+}
+
+fn main() {
+    println!("{}", is_valid_username("shamirul"));
+    println!("{}", is_valid_username("a b"));
+}
+```
+
 ## Your turn
 
 This function is documented with the wrong comment style, so `cargo doc` will ignore the

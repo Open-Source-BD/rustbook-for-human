@@ -152,6 +152,77 @@ async mistake.
   bookkeeping overhead for no benefit. Plain threads (or nothing at all) are usually the right
   tool there.
 
+## More examples
+
+### Requesting a weather forecast
+Calling `get_forecast` doesn't hit the network — it builds a `Future` describing the call, and dropping that future without awaiting it means the request never goes out.
+
+```rust,editable
+async fn get_forecast(city: &str) -> String {
+    println!("get_forecast: calling the weather API for {city}");
+    format!("sunny in {city}")
+}
+
+fn main() {
+    let forecast = get_forecast("Dhaka");
+    println!("holding a Future — the API call above hasn't happened yet");
+    drop(forecast);
+}
+```
+
+### Chaining a login into a dashboard load
+One `async fn` can `.await` another to sequence steps — but that inner sequencing only ever plays out once something drives the *outer* future, which `main` never does here.
+
+```rust,editable
+async fn log_in(user: &str) -> bool {
+    println!("log_in: checking credentials for {user}");
+    true
+}
+
+async fn load_dashboard(user: &str) -> String {
+    let ok = log_in(user).await;
+    if ok {
+        format!("dashboard for {user}")
+    } else {
+        String::from("access denied")
+    }
+}
+
+fn main() {
+    let dashboard = load_dashboard("shaon");
+    println!("built the login+dashboard future, but log_in's println never ran");
+    drop(dashboard);
+}
+```
+
+### Queuing ad-hoc work with an async block
+You don't need a named `async fn` for a one-off task — an `async { ... }` block is a future too, built and left unstarted exactly the same way.
+
+```rust,editable
+fn main() {
+    let task = async {
+        println!("task: uploading screenshot");
+        "upload complete"
+    };
+    println!("task queued — but did 'uploading screenshot' print?");
+    drop(task);
+}
+```
+
+### Firing a metrics ping and forgetting to await it
+Calling `ping_metrics(...)` as a bare statement looks like a fire-and-forget call, but it's really an unused `Future` — the compiler's warning is the only thing standing between this and a metrics ping that silently never happens.
+
+```rust,editable
+async fn ping_metrics(event: &str) {
+    println!("ping_metrics: recording {event}");
+}
+
+fn main() {
+    ping_metrics("checkout_completed"); // looks fire-and-forget, but it isn't
+    println!("checkout finished — did the metrics ping actually fire?");
+}
+```
+
 ## Your turn
 
 This is supposed to fetch a value and print it. It has **two** separate compile errors. Find

@@ -136,6 +136,94 @@ fn main() {
 - **Assuming a `HashMap` preserves insertion order.** It doesn't, and the order can differ between runs of the same program. Don't build logic that depends on it.
 - **Calling `.insert()` on a `HashMap` and expecting an error on a duplicate key.** It silently overwrites the old value instead. If you need to know whether a key already existed, check the return value of `.insert()` — it's `Some(old_value)` on overwrite, `None` if the key was new.
 
+## More examples
+
+### Selling from a warehouse's stock
+A sale should reduce the count for exactly one item; `.get_mut(key)` hands back a mutable reference straight into the map, so there's no separate lookup-then-write step.
+
+```rust,editable
+use std::collections::HashMap;
+
+fn main() {
+    let mut stock: HashMap<&str, u32> = HashMap::new();
+    stock.insert("widget", 50);
+    stock.insert("gadget", 12);
+
+    if let Some(count) = stock.get_mut("widget") {
+        *count -= 3; // sold 3 widgets
+    }
+
+    println!("widgets left: {}", stock["widget"]);
+    println!("gadgets left: {}", stock["gadget"]);
+}
+```
+
+### Grouping orders by customer
+A flat list of orders becomes a per-customer order history the moment you group it — `entry(...).or_insert_with(Vec::new)` builds each customer's list lazily as their orders come in.
+
+```rust,editable
+use std::collections::HashMap;
+
+fn main() {
+    let orders = [
+        ("alice", "book"),
+        ("bob", "pen"),
+        ("alice", "lamp"),
+        ("carol", "mug"),
+        ("bob", "notebook"),
+    ];
+
+    let mut by_customer: HashMap<&str, Vec<&str>> = HashMap::new();
+    for (customer, item) in orders {
+        by_customer.entry(customer).or_insert_with(Vec::new).push(item);
+    }
+
+    let mut names: Vec<_> = by_customer.keys().collect();
+    names.sort();
+    for name in names {
+        println!("{}: {:?}", name, by_customer[name]);
+    }
+}
+```
+
+### Blocking duplicate coupon codes
+A checkout should honor each coupon once; `HashSet::insert` returning `false` on a repeat is exactly the signal needed to reject a code that's already been redeemed.
+
+```rust,editable
+use std::collections::HashSet;
+
+fn main() {
+    let mut redeemed: HashSet<&str> = HashSet::new();
+    let attempts = ["SAVE10", "WELCOME", "SAVE10", "FREESHIP"];
+
+    for code in attempts {
+        if redeemed.insert(code) {
+            println!("{} accepted", code);
+        } else {
+            println!("{} rejected: already used", code);
+        }
+    }
+}
+```
+
+### Feature flags with a safe fallback
+Not every flag will have been set yet, so `.get(key).unwrap_or(&false)` treats a missing flag as "off" instead of crashing the app.
+
+```rust,editable
+use std::collections::HashMap;
+
+fn main() {
+    let mut flags: HashMap<&str, bool> = HashMap::new();
+    flags.insert("dark_mode", true);
+
+    let dark_mode = *flags.get("dark_mode").unwrap_or(&false);
+    let beta_search = *flags.get("beta_search").unwrap_or(&false);
+
+    println!("dark_mode: {}", dark_mode);
+    println!("beta_search: {}", beta_search);
+}
+```
+
 ## Your turn
 
 This program wants to track which `Point`s have been visited, but it doesn't compile.

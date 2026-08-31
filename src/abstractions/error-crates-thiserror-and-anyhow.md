@@ -130,6 +130,101 @@ It's common to see both in the same project: a library crate exposes a `thiserro
 - **Putting `#[from]` on two fields of the same source error type.** `thiserror` generates one `From<X>` impl per `#[from]` field; two fields of the same `X` would need two conflicting `From<X>` impls, which doesn't compile.
 - **Expecting to `match` on an `anyhow::Error`.** It's intentionally type-erased. If you need to distinguish error cases in application code, either keep using a `thiserror` enum there too, or `.downcast_ref::<SpecificError>()` on the `anyhow::Error` (rare, and usually a sign `thiserror` was the better fit).
 
+## More examples
+
+### A `thiserror` enum with two different `#[from]` sources
+A config loader can fail while reading the file (`io::Error`) or while parsing a value out of it (`ParseIntError`) — `#[from]` on each field generates the matching `From` impl, so `?` still converts both automatically.
+
+```rust
+use std::io;
+use std::num::ParseIntError;
+
+#[derive(thiserror::Error, Debug)]
+enum ConfigLoadError {
+    #[error("couldn't read config file")]
+    Io(#[from] io::Error),
+
+    #[error("config value isn't a valid number")]
+    BadNumber(#[from] ParseIntError),
+}
+
+fn load_max_connections(path: &str) -> Result<u32, ConfigLoadError> {
+    let text = std::fs::read_to_string(path)?; // io::Error -> ConfigLoadError
+    let max: u32 = text.trim().parse()?;       // ParseIntError -> ConfigLoadError
+    Ok(max)
+}
+```
+
+### Attaching context at every step of a pipeline
+`main` here reads a file, parses it, and normalizes the result — `.context(...)` at each fallible step means a failure says exactly *which* step broke, not just what the underlying error was.
+
+```rust
+use anyhow::{Context, Result};
+
+fn run() -> Result<()> {
+    let raw = std::fs::read_to_string("threshold.txt")
+        .context("reading threshold.txt")?;
+    let threshold: f64 = raw
+        .trim()
+        .parse()
+        .context("threshold.txt must contain a number")?;
+    let normalized = (threshold / 100.0).clamp(0.0, 1.0);
+    println!("normalized threshold: {normalized}");
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    run().context("startup failed")
+}
+```
+
+### Bailing out before doing any real work
+A discount percentage outside 0-100 is nonsense input — `bail!` rejects it in one line, before the function bothers computing anything with it.
+
+```rust
+use anyhow::{bail, Result};
+
+fn apply_discount(price: f64, percent: f64) -> Result<f64> {
+    if !(0.0..=100.0).contains(&percent) {
+        bail!("discount percent must be between 0 and 100, got {percent}");
+    }
+    Ok(price * (1.0 - percent / 100.0))
+}
+
+fn main() -> Result<()> {
+    println!("{:.2}", apply_discount(80.0, 25.0)?);
+    println!("{:.2}", apply_discount(80.0, 150.0)?); // bails before any math happens
+    Ok(())
+}
+```
+
+### A library's precise errors, wrapped in `anyhow` at the application boundary
+The library crate below exposes a `thiserror` enum so its callers *could* match on specific failures; the binary that uses it doesn't care and just wants `?` to work, so it returns `anyhow::Result` instead.
+
+```rust
+// --- lib.rs (a library crate) ---
+#[derive(thiserror::Error, Debug)]
+pub enum StorageError {
+    #[error("key not found: {0}")]
+    NotFound(String),
+}
+
+pub fn get(key: &str) -> Result<String, StorageError> {
+    if key == "config" {
+        Ok("value".to_string())
+    } else {
+        Err(StorageError::NotFound(key.to_string()))
+    }
+}
+
+// --- main.rs (the binary crate, depends on the library above) ---
+fn main() -> anyhow::Result<()> {
+    let value = get("missing-key")?; // StorageError -> anyhow::Error automatically
+    println!("{value}");
+    Ok(())
+}
+```
+
 ## Your turn
 
 `read_port` is meant to attach a helpful message to a parse failure, but it doesn't compile.

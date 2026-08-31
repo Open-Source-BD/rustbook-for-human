@@ -143,6 +143,123 @@ fn main() {
 - **Forgetting `impl Trait` return position must be one concrete type per function.** `if cond { return ClosureA } else { return ClosureB }` from an `-> impl Fn(...)` function fails to compile, because the two branches are different underlying closure types even though both implement `Fn`. Use `Box<dyn Fn(...)>` if the concrete type genuinely varies.
 - **Confusing `Box<dyn Trait>` with `Box<T>`.** `Box<T>` still knows exactly which `T` it holds and dispatches statically — only writing `dyn` in the type turns on dynamic dispatch.
 
+## More examples
+
+### Total area across mixed shapes
+A floor-plan tool needs one number — total square footage — from a list of rooms that are circles, rectangles, and triangles all mixed together. `dyn Shape` is what lets one loop handle all three.
+
+```rust,editable
+trait Shape {
+    fn area(&self) -> f64;
+}
+struct Circle { r: f64 }
+struct Rectangle { w: f64, h: f64 }
+struct Triangle { base: f64, height: f64 }
+impl Shape for Circle { fn area(&self) -> f64 { std::f64::consts::PI * self.r * self.r } }
+impl Shape for Rectangle { fn area(&self) -> f64 { self.w * self.h } }
+impl Shape for Triangle { fn area(&self) -> f64 { 0.5 * self.base * self.height } }
+
+fn main() {
+    let shapes: Vec<Box<dyn Shape>> = vec![
+        Box::new(Circle { r: 1.0 }),
+        Box::new(Rectangle { w: 2.0, h: 3.0 }),
+        Box::new(Triangle { base: 4.0, height: 2.0 }),
+    ];
+    let total: f64 = shapes.iter().map(|s| s.area()).sum();
+    println!("total area: {:.2}", total);
+}
+```
+
+### `&dyn Trait` vs `impl Trait` as a parameter
+Both spellings accept "anything that implements `Named`," but they read differently and fit different callers — `impl Trait` is the everyday default, `&dyn Trait` is what you reach for when the caller already has a trait object on hand.
+
+```rust,editable
+trait Named {
+    fn name(&self) -> &str;
+}
+struct Robot { label: String }
+impl Named for Robot { fn name(&self) -> &str { &self.label } }
+
+// impl Trait: compiler picks one concrete type per call site
+fn greet_impl(n: &impl Named) {
+    println!("hello, {} (impl Trait)", n.name());
+}
+// &dyn Trait: same call works through a vtable, useful when the caller
+// only has a trait object handy (e.g. from a Vec<Box<dyn Named>>)
+fn greet_dyn(n: &dyn Named) {
+    println!("hello, {} (dyn Trait)", n.name());
+}
+
+fn main() {
+    let r = Robot { label: String::from("R2") };
+    greet_impl(&r);
+    greet_dyn(&r);
+}
+```
+
+### A plugin-style callback list
+A build tool wants to run an arbitrary list of registered steps in order, without knowing ahead of time how many there are or what each one does — `Vec<Box<dyn Fn()>>` is a list of "callable things," not a list of one specific closure type.
+
+```rust,editable
+fn main() {
+    let handlers: Vec<Box<dyn Fn()>> = vec![
+        Box::new(|| println!("handler 1: sending email")),
+        Box::new(|| println!("handler 2: logging event")),
+        Box::new(|| println!("handler 3: updating cache")),
+    ];
+
+    for handle in &handlers {
+        handle();
+    }
+}
+```
+
+### Storing a trait object in a struct field
+An app that might notify users by email today and by SMS tomorrow doesn't want its `App` struct locked to one concrete notifier type — it just stores "something that can notify."
+
+```rust,editable
+trait Notifier {
+    fn notify(&self, msg: &str);
+}
+struct EmailNotifier;
+impl Notifier for EmailNotifier {
+    fn notify(&self, msg: &str) { println!("EMAIL: {}", msg); }
+}
+
+struct App {
+    notifier: Box<dyn Notifier>,
+}
+
+fn main() {
+    let app = App { notifier: Box::new(EmailNotifier) };
+    app.notifier.notify("build finished");
+}
+```
+
+### Trait objects without `Box`: borrowed, not owned
+When the concrete values already live on the stack and you just need a temporary mixed-type list, a borrowed `&dyn Trait` skips the heap allocation `Box` would need.
+
+```rust,editable
+trait Animal {
+    fn speak(&self) -> String;
+}
+struct Dog;
+struct Cat;
+impl Animal for Dog { fn speak(&self) -> String { String::from("Woof") } }
+impl Animal for Cat { fn speak(&self) -> String { String::from("Meow") } }
+
+fn main() {
+    let dog = Dog;
+    let cat = Cat;
+    // no heap allocation needed — just borrow each one as a trait object
+    let animals: Vec<&dyn Animal> = vec![&dog, &cat];
+
+    for a in &animals {
+        println!("{}", a.speak());
+    }
+}
+```
+
 ## Your turn
 
 This program wants a `Vec` that holds both `Circle` and `Square` shapes behind one interface, but it doesn't compile.

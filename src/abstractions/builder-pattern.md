@@ -139,6 +139,177 @@ fn main() {
 - **Skipping validation in `.build()`.** If `.build()` just always returns `Ok(...)` (or isn't fallible at all) for a struct with genuinely required fields, you've reinvented "trust me it's fine" — exactly what `Result` exists to avoid. Use `Option` fields plus `.ok_or(...)?` for anything required.
 - **Mutating through `&mut self` instead of consuming `self`.** Both styles exist in real code, but mixing them confuses callers: consuming-`self` builders must be reassigned (`b = b.port(80)`) or chained directly; `&mut self` builders mutate in place and return `&mut Self`. Pick one style per builder and stay consistent.
 
+## More examples
+
+### An HTTP-request-style builder
+Building an HTTP request has a handful of optional pieces — headers especially, since there can be any number of them — so each piece gets its own chainable method instead of a constructor with a `Vec` parameter.
+
+```rust,editable
+#[derive(Debug, Default)]
+struct HttpRequest {
+    method: String,
+    url: String,
+    headers: Vec<(String, String)>,
+}
+
+#[derive(Default)]
+struct RequestBuilder {
+    method: String,
+    url: String,
+    headers: Vec<(String, String)>,
+}
+
+impl RequestBuilder {
+    fn method(mut self, method: &str) -> Self {
+        self.method = method.to_string();
+        self
+    }
+
+    fn url(mut self, url: &str) -> Self {
+        self.url = url.to_string();
+        self
+    }
+
+    fn header(mut self, key: &str, value: &str) -> Self {
+        self.headers.push((key.to_string(), value.to_string()));
+        self
+    }
+
+    fn build(self) -> HttpRequest {
+        HttpRequest { method: self.method, url: self.url, headers: self.headers }
+    }
+}
+
+fn main() {
+    let req = RequestBuilder::default()
+        .method("GET")
+        .url("https://api.example.com/users")
+        .header("Authorization", "Bearer token123")
+        .header("Accept", "application/json")
+        .build();
+
+    println!("{} {} ({} headers)", req.method, req.url, req.headers.len());
+}
+```
+
+### A required field enforced at `.build()`
+An email with no recipient isn't really an email — storing `to` as `Option<String>` and checking it in `.build()` makes "forgot to set the recipient" a `Result::Err` instead of a silently blank field.
+
+```rust,editable
+struct Email {
+    to: String,
+    subject: String,
+}
+
+#[derive(Default)]
+struct EmailBuilder {
+    to: Option<String>,
+    subject: Option<String>,
+}
+
+impl EmailBuilder {
+    fn to(mut self, addr: &str) -> Self {
+        self.to = Some(addr.to_string());
+        self
+    }
+
+    fn subject(mut self, subject: &str) -> Self {
+        self.subject = Some(subject.to_string());
+        self
+    }
+
+    fn build(self) -> Result<Email, String> {
+        Ok(Email {
+            to: self.to.ok_or("an email needs a recipient")?,
+            subject: self.subject.unwrap_or_else(|| "(no subject)".to_string()),
+        })
+    }
+}
+
+fn main() {
+    let missing_recipient = EmailBuilder::default().subject("Hi!").build();
+    match missing_recipient {
+        Ok(e) => println!("sent to {}", e.to),
+        Err(e) => println!("refused to send: {e}"),
+    }
+}
+```
+
+### `Default` plus overriding just the fields that matter
+Most calls only need to tweak one or two settings out of many — start from `Default::default()` and chain only the setters you actually care about, leaving everything else at its sensible default.
+
+```rust,editable
+#[derive(Debug, Default, Clone)]
+struct RequestOptions {
+    timeout_secs: u32,
+    retries: u8,
+    follow_redirects: bool,
+}
+
+impl RequestOptions {
+    fn timeout_secs(mut self, secs: u32) -> Self {
+        self.timeout_secs = secs;
+        self
+    }
+
+    fn retries(mut self, retries: u8) -> Self {
+        self.retries = retries;
+        self
+    }
+}
+
+fn main() {
+    // Most defaults are fine; only override the two that matter for this call.
+    let opts = RequestOptions::default().timeout_secs(30).retries(5);
+    println!("{opts:?}"); // follow_redirects stays false, the Default value
+}
+```
+
+### Builder chain vs. the equivalent constructor call
+Same `Connection`, built two ways — the positional constructor forces the reader to remember what each value means; the builder labels every value with the method that set it.
+
+```rust,editable
+struct Connection {
+    host: String,
+    port: u16,
+    timeout_ms: u32,
+    tls: bool,
+}
+
+// The verbose way: one constructor, every field a positional argument.
+fn new_connection(host: &str, port: u16, timeout_ms: u32, tls: bool) -> Connection {
+    Connection { host: host.to_string(), port, timeout_ms, tls }
+}
+
+#[derive(Default)]
+struct ConnectionBuilder {
+    host: String,
+    port: u16,
+    timeout_ms: u32,
+    tls: bool,
+}
+
+impl ConnectionBuilder {
+    fn host(mut self, host: &str) -> Self { self.host = host.to_string(); self }
+    fn port(mut self, port: u16) -> Self { self.port = port; self }
+    fn tls(mut self, tls: bool) -> Self { self.tls = tls; self }
+    fn build(self) -> Connection {
+        Connection { host: self.host, port: self.port, timeout_ms: self.timeout_ms, tls: self.tls }
+    }
+}
+
+fn main() {
+    // Verbose: what does `5000` mean here without checking the signature?
+    let a = new_connection("db.internal", 5432, 5000, true);
+
+    // Builder: every value is labeled by the method name that set it.
+    let b = ConnectionBuilder::default().host("db.internal").port(5432).tls(true).build();
+
+    println!("{}:{} tls={}", a.host, a.port, a.tls);
+    println!("{}:{} tls={}", b.host, b.port, b.tls);
+}
+```
+
 ## Your turn
 
 This builder for a `ServerConfig` doesn't compile. One setter is missing something the rest of the chain depends on:

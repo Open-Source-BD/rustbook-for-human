@@ -117,6 +117,92 @@ fn main() {
 - **Assuming the build script runs on the *target* platform.** It always runs on the *host* machine building the crate, even when cross-compiling for something else entirely — reading `cfg!(target_os = ...)` inside `build.rs` reports the host, not the target. Use the `CARGO_CFG_TARGET_OS` environment variable instead if the target matters.
 - **Panicking with no message when required input is missing.** A build script failure aborts the entire build, so a bare `.unwrap()` on a missing file leaves whoever hits it with a cryptic backtrace instead of a clear reason.
 
+## More examples
+
+### Generating a lookup table into `OUT_DIR`
+A game precomputes a table of sine values at build time instead of shipping a hand-typed array, writing the generated Rust source into `OUT_DIR` for the crate to pull in.
+
+```rust
+// build.rs
+use std::env;
+use std::fs;
+use std::path::Path;
+
+fn main() {
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest = Path::new(&out_dir).join("sine_table.rs");
+
+    let mut code = String::from("pub const SINE_TABLE: [f64; 4] = [");
+    for i in 0..4 {
+        let angle = i as f64 * std::f64::consts::PI / 2.0;
+        code.push_str(&format!("{:?}, ", angle.sin()));
+    }
+    code.push_str("];\n");
+
+    fs::write(&dest, code).unwrap();
+    println!("cargo::rerun-if-changed=build.rs");
+}
+```
+
+```rust
+// src/main.rs
+include!(concat!(env!("OUT_DIR"), "/sine_table.rs"));
+
+fn main() {
+    println!("{:?}", SINE_TABLE);
+}
+```
+
+### Failing fast when a required config file is missing
+A server crate would rather refuse to compile than start up later with a confusing runtime error, so its build script checks for `config.toml` up front and panics with a message that says exactly what to do.
+
+```rust
+// build.rs
+use std::path::Path;
+
+fn main() {
+    if !Path::new("config.toml").exists() {
+        panic!("config.toml is missing — copy config.toml.example and fill it in first");
+    }
+    println!("cargo::rerun-if-changed=config.toml");
+}
+```
+
+### Linking a bundled SQLite library
+When the native library is already compiled and just needs linking, `cargo::rustc-link-search` and `cargo::rustc-link-lib` tell the linker where to look and what to link against, no `cc` crate required.
+
+```rust
+// build.rs
+fn main() {
+    println!("cargo::rustc-link-search=native=vendor/sqlite");
+    println!("cargo::rustc-link-lib=static=sqlite3");
+    println!("cargo::rerun-if-changed=vendor/sqlite");
+}
+```
+
+### Gating platform-specific code behind a build-time check
+A build script can inspect the compilation target and emit a custom `cfg` flag, letting the main crate pick an OS-specific code path with an ordinary `#[cfg(...)]`.
+
+```rust
+// build.rs
+fn main() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux") {
+        println!("cargo::rustc-cfg=has_epoll");
+    }
+}
+```
+
+```rust
+// src/main.rs
+fn main() {
+    #[cfg(has_epoll)]
+    println!("using epoll for event polling");
+
+    #[cfg(not(has_epoll))]
+    println!("falling back to a portable poller");
+}
+```
+
 ## Your turn
 
 This crate's `build.rs` sets a version string, and `main.rs` tries to read it back with `env!` — but the crate fails to compile with `error: environment variable APP_VERSION not defined at compile time`:

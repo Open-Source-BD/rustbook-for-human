@@ -152,6 +152,88 @@ reason clap exists.
 - **Forgetting the `--` with `cargo run`.** `cargo run hello` passes `hello` to *cargo*; you need
   `cargo run -- hello` to pass it to your program.
 
+## More examples
+
+### Checking every file a linter was pointed at
+A linter that accepts any number of filenames on the command line just needs everything in `args` after the program name — `&args[1..]` turns the rest of the list into the files to check.
+
+```rust,editable
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let files = &args[1..]; // everything after the program name
+
+    println!("checking {} file(s)", files.len());
+    for f in files {
+        println!("  - {f}");
+    }
+}
+```
+
+### Keeping backup progress separate from its result
+A backup tool that prints progress to stdout ruins itself the moment someone captures its output with `$(...)` — status goes to stderr, and the one line that matters goes to stdout.
+
+```rust,editable
+fn main() {
+    eprintln!("backing up 3 files...");
+    eprintln!("backing up 12 files...");
+
+    // the actual result: a path a caller could capture with `$(myapp backup)`
+    println!("/backups/2026-08-31.tar.gz");
+}
+```
+
+### Rejecting a bad port number with the right exit code
+A port-checker CLI needs scripts to be able to tell "you gave me garbage" apart from "the port is closed" — exiting `2` for a usage error keeps that distinction visible to anything calling it.
+
+```rust,editable
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    let port: u16 = match args.get(1) {
+        Some(p) => match p.parse() {
+            Ok(n) => n,
+            Err(_) => {
+                eprintln!("error: '{p}' is not a valid port number");
+                std::process::exit(2); // usage error
+            }
+        },
+        None => {
+            eprintln!("usage: portcheck <port>");
+            std::process::exit(2);
+        }
+    };
+
+    println!("checking port {port}...");
+}
+```
+
+### A `clap`-powered to-do CLI
+clap turns a to-do tool's `task` argument and `--urgent` flag into a real struct — no hand-written parsing, and `--help` for free.
+
+```rust
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(about = "Adds a task to your to-do list")]
+struct Cli {
+    /// What needs doing
+    task: String,
+
+    /// Mark it urgent
+    #[arg(long)]
+    urgent: bool,
+}
+
+fn main() {
+    let cli = Cli::parse();
+    if cli.urgent {
+        println!("[URGENT] {}", cli.task);
+    } else {
+        println!("added: {}", cli.task);
+    }
+}
+```
+
 ## Your turn
 
 This program should greet the argument the user passed, but it crashes when run with no argument.

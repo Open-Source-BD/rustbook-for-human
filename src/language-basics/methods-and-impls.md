@@ -125,6 +125,124 @@ Why put behavior in an `impl` instead of loose functions? Because the logic that
 - **Accidentally consuming with `self`.** A method that takes `self` (no `&`) *moves* the value; you can't use the variable afterward. If you only meant to read, use `&self` so the caller keeps ownership.
 - **Forgetting `self` inside the method.** Fields are `self.width`, not just `width`. Without `self.`, Rust looks for a local variable named `width` and won't find one.
 
+## More examples
+
+### Reading a thermostat's setting
+A smart-home app needs to display the temperature without ever letting other code accidentally change it — a perfect job for `&self`.
+
+```rust,editable
+struct Thermostat {
+    celsius: f64,
+}
+
+impl Thermostat {
+    fn fahrenheit(&self) -> f64 {
+        self.celsius * 9.0 / 5.0 + 32.0
+    }
+}
+
+fn main() {
+    let t = Thermostat { celsius: 22.0 };
+    println!("{:.1}F", t.fahrenheit());
+}
+```
+
+### Growing a shopping cart
+An online store adds items to a cart every time the shopper clicks "add to cart" — that's a change, so it needs `&mut self`.
+
+```rust,editable
+struct Cart {
+    items: Vec<String>,
+}
+
+impl Cart {
+    fn add_item(&mut self, item: &str) {
+        self.items.push(item.to_string());
+    }
+}
+
+fn main() {
+    let mut cart = Cart { items: Vec::new() };
+    cart.add_item("keyboard");
+    cart.add_item("mouse");
+    println!("{:?}", cart.items);
+}
+```
+
+### Unwrapping a sealed envelope
+Once you open a sealed envelope you can't reseal it — some methods should consume their value and hand back what's inside, never to be used again.
+
+```rust,editable
+struct Envelope {
+    letter: String,
+}
+
+impl Envelope {
+    fn open(self) -> String {
+        self.letter
+    }
+}
+
+fn main() {
+    let envelope = Envelope { letter: String::from("You got the job!") };
+    let letter = envelope.open();
+    println!("{letter}");
+    // envelope can't be used anymore — it was consumed by open()
+}
+```
+
+### Building a user profile from parts
+A constructor gathers scattered inputs — a name, an age — into one valid struct, so callers never have to build a `UserProfile` field-by-field.
+
+```rust,editable
+struct UserProfile {
+    name: String,
+    age: u32,
+}
+
+impl UserProfile {
+    fn new(name: &str, age: u32) -> UserProfile {
+        UserProfile { name: name.to_string(), age }
+    }
+}
+
+fn main() {
+    let user = UserProfile::new("Priya", 29);
+    println!("{} is {}", user.name, user.age);
+}
+```
+
+### Configuring a server before it starts
+Chaining self-consuming methods that each return `Self` lets you configure an object step by step, like `ServerConfig::new().with_port(8080)`.
+
+```rust,editable
+struct ServerConfig {
+    port: u16,
+    debug: bool,
+}
+
+impl ServerConfig {
+    fn new() -> ServerConfig {
+        ServerConfig { port: 80, debug: false }
+    }
+
+    fn with_port(mut self, port: u16) -> ServerConfig {
+        self.port = port;
+        self
+    }
+
+    fn with_debug(mut self, debug: bool) -> ServerConfig {
+        self.debug = debug;
+        self
+    }
+}
+
+fn main() {
+    let config = ServerConfig::new().with_port(8080).with_debug(true);
+    println!("port={} debug={}", config.port, config.debug);
+}
+```
+
 ## Your turn
 
 This program defines a `BankAccount` with a deposit method, but it won't compile. The deposit method can't change the balance, and the account it's called on isn't declared right. Fix both. Press ▶ Run.

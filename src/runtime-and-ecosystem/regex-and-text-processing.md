@@ -107,6 +107,70 @@ fn main() {
 - **Reaching for regex when a `str` method would do.** A pattern like `"starts with http"` doesn't need `Regex::new(r"^http")` when `s.starts_with("http")` says the same thing without a dependency.
 - **Reading captures by numeric index.** `&caps[1]` breaks silently if the pattern's groups are ever reordered; named groups (`&caps["name"]`) are self-documenting and safer to refactor.
 
+## More examples
+
+### Extracting a file extension
+Splitting on the last `.` is a fixed, unchanging pattern — `rsplit_once('.')` reads clearer than a regex and needs no dependency.
+
+```rust,editable
+fn main() {
+    let filenames = ["report.pdf", "archive.tar.gz", "README"];
+
+    for name in filenames {
+        match name.rsplit_once('.') {
+            Some((_, ext)) => println!("{name}: .{ext}"),
+            None => println!("{name}: no extension"),
+        }
+    }
+}
+```
+
+### Validating a phone number from a form
+A phone field needs a genuine shape check — digits grouped a specific way — which is exactly what a regex is for, unlike a fixed substring check.
+
+```rust
+use regex::Regex;
+
+fn main() {
+    let re = Regex::new(r"^\(\d{3}\) \d{3}-\d{4}$").unwrap();
+
+    for candidate in ["(555) 123-4567", "555-123-4567", "(555) 12-4567"] {
+        println!("{candidate}: {}", re.is_match(candidate));
+    }
+}
+```
+
+### Extracting hashtags from a tweet
+`find_iter` walks the whole text and returns every match, not just the first — exactly what pulling out every `#hashtag` in a post needs.
+
+```rust
+use regex::Regex;
+
+fn main() {
+    let re = Regex::new(r"#\w+").unwrap();
+    let tweet = "Loving #rust and #systemsprogramming lately, no #cap.";
+
+    for hashtag in re.find_iter(tweet) {
+        println!("{}", hashtag.as_str());
+    }
+}
+```
+
+### Redacting credit card numbers in logs
+`.replace_all()` swaps every match for a fixed string in one pass — handy for scrubbing sensitive numbers out of a log line before it's written anywhere.
+
+```rust
+use regex::Regex;
+
+fn main() {
+    let re = Regex::new(r"\d{4}-\d{4}-\d{4}-\d{4}").unwrap();
+    let log_line = "charged card 4111-1111-1111-1111 for $42.00";
+
+    let redacted = re.replace_all(log_line, "[REDACTED]");
+    println!("{redacted}");
+}
+```
+
 ## Your turn
 
 This program is supposed to check whether some text looks like a date — but it doesn't compile.

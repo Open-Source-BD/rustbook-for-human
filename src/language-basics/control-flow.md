@@ -147,6 +147,91 @@ You *could* loop by hand with a counter and index into an array, but it's easy t
 - **`break` outside a loop.** `break` only works inside `loop`, `while`, or `for`. Using it elsewhere is an error.
 - **Forgetting to change the `while` condition.** If nothing inside the loop moves toward making the condition false, it runs forever. Make sure you update the variable the condition checks.
 
+## More examples
+
+### Searching until you find it, with `break value`
+When you're scanning for something, you often want the loop to hand back *what it found*, not just stop — `break value` does exactly that.
+
+```rust,editable
+fn main() {
+    let inventory = [3, 12, 47, 8, 47, 2];
+    let mut i = 0;
+    let position = loop {
+        if inventory[i] == 47 {
+            break i; // found it, hand back the index
+        }
+        i += 1;
+    };
+    println!("found at index {position}");
+}
+```
+
+### A labeled loop to escape two levels at once
+Searching a grid means nesting a loop inside a loop. Once you find your target, a label lets you break out of *both* in one line instead of juggling a "found" flag.
+
+```rust,editable
+fn main() {
+    let grid = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    let target = 5;
+
+    'search: for row in grid {
+        for cell in row {
+            if cell == target {
+                println!("found {target}!");
+                break 'search; // stop both loops at once
+            }
+        }
+    }
+}
+```
+
+### Draining a stack with `while let`
+Popping items off a stack until it's empty is a perfect fit for `while let` — it keeps going as long as `pop()` still hands back `Some(value)`, and stops the instant it doesn't.
+
+```rust,editable
+fn main() {
+    let mut undo_stack = vec!["type", "bold", "delete"];
+
+    while let Some(action) = undo_stack.pop() {
+        println!("undoing: {action}");
+    }
+    println!("nothing left to undo");
+}
+```
+
+### An `if` chain that picks a grade band
+When there are more than two outcomes, chain `else if` and let the whole thing evaluate to a value — no separate variable needs reassigning afterward.
+
+```rust,editable
+fn main() {
+    let score = 84;
+
+    let grade = if score >= 90 {
+        "A"
+    } else if score >= 80 {
+        "B"
+    } else if score >= 70 {
+        "C"
+    } else {
+        "F"
+    };
+    println!("grade: {grade}");
+}
+```
+
+### Numbering items with `enumerate`
+Printing a numbered list means pairing each item with its position. `.iter().enumerate()` hands you both at once, so you never have to track an index by hand.
+
+```rust,editable
+fn main() {
+    let playlist = ["Intro", "Chapter 1", "Chapter 2", "Outro"];
+
+    for (i, track) in playlist.iter().enumerate() {
+        println!("{}. {track}", i + 1);
+    }
+}
+```
+
 ## Your turn
 
 This program should print `pass` or `retry`, then count `1`, `2`, `3`. It has two problems. Fix it. Press ▶ Run.

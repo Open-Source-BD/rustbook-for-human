@@ -154,6 +154,89 @@ change underneath you while you're looking at it.
 - **Forgetting `mut` on the variable itself.** You can't take a `&mut` of something that was never
   declared `mut`. The error points you back to the `let` and says to add `mut`.
 
+## More examples
+
+### Reading a cart's size without taking it
+A dashboard needs to show how many items are in the cart without taking the cart away from the checkout logic that still needs it.
+
+```rust,editable
+fn summarize(items: &Vec<String>) -> usize {
+    items.len()
+}
+
+fn main() {
+    let cart = vec![String::from("pen"), String::from("notebook")];
+    println!("{} items in cart", summarize(&cart));
+    println!("still have it: {:?}", cart);
+}
+```
+
+### Restocking a shelf through a mutable borrow
+A warehouse restock function needs to add new items to an existing inventory list without taking ownership of the whole warehouse.
+
+```rust,editable
+fn restock(inventory: &mut Vec<&str>) {
+    inventory.push("stapler");
+}
+
+fn main() {
+    let mut inventory = vec!["paper", "pens"];
+    restock(&mut inventory);
+    println!("{:?}", inventory);
+}
+```
+
+### Doubling every score in place
+A game engine wants to apply a 2x multiplier to every player's score after a bonus round, editing the list it was given rather than building a new one.
+
+```rust,editable
+fn double_all(scores: &mut Vec<i32>) {
+    for score in scores.iter_mut() {
+        *score *= 2;
+    }
+}
+
+fn main() {
+    let mut scores = vec![10, 20, 30];
+    double_all(&mut scores);
+    println!("{:?}", scores);
+}
+```
+
+### Why two `&mut` borrows can't coexist
+Imagine two parts of a program both trying to hand out edit access to the same balance at once — Rust catches that at compile time before it becomes a real bug.
+
+```rust
+fn main() {
+    let mut balance = 100;
+
+    let r1 = &mut balance;
+    let r2 = &mut balance; // ERROR: second mutable borrow while r1 is still alive
+
+    println!("{} {}", r1, r2);
+}
+```
+
+### Borrowing one field while another stays free
+A player struct has a name (read for the scoreboard) and a score (updated after each round). Rust lets you borrow each field independently at the same time, since they don't overlap.
+
+```rust,editable
+struct Player {
+    name: String,
+    score: u32,
+}
+
+fn main() {
+    let mut player = Player { name: String::from("Kai"), score: 0 };
+
+    let name_ref = &player.name;       // borrow just the name field
+    let score_ref = &mut player.score; // borrow just the score field, mutably
+    *score_ref += 10;
+
+    println!("{name_ref} now has {score_ref} points");
+}
+```
+
 ## Your turn
 
 This program wants to add a `"."` to the end of the sentence, then print it. It doesn't compile.

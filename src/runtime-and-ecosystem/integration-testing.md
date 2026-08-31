@@ -112,6 +112,117 @@ fn public_add_works() {
 - **Writing integration tests for a binary-only crate.** With no `src/lib.rs`, there's no library for `tests/*.rs` to `use` — move the logic you want to test into a library target first.
 - **Underestimating the cost.** Each file directly under `tests/` triggers its own full compile of your library. A handful of files is fine; dozens of large integration test files can noticeably slow down `cargo test`.
 
+## More examples
+
+### Testing a shopping cart's total from outside the crate
+The public `cart_total` function is exactly what a checkout page would call, so the integration test calls it the same way — through `my_crate::cart_total`, nothing internal.
+
+```rust
+// src/lib.rs
+pub fn cart_total(prices: &[f64]) -> f64 {
+    prices.iter().sum()
+}
+```
+
+```rust
+// tests/cart.rs
+use my_crate::cart_total;
+
+#[test]
+fn sums_every_item_in_the_cart() {
+    let prices = vec![19.99, 5.50, 3.25];
+    assert_eq!(cart_total(&prices), 28.74);
+}
+```
+
+### Testing a public password validator's pass and fail cases
+A signup form only cares whether `is_valid_password` returns `true` or `false` for real input — an integration test writes both cases exactly as a caller would see them.
+
+```rust
+// src/lib.rs
+pub fn is_valid_password(password: &str) -> bool {
+    password.len() >= 8 && password.chars().any(|c| c.is_ascii_digit())
+}
+```
+
+```rust
+// tests/password.rs
+use my_crate::is_valid_password;
+
+#[test]
+fn accepts_a_password_with_a_digit_and_enough_length() {
+    assert!(is_valid_password("orbit42launch"));
+}
+
+#[test]
+fn rejects_a_password_with_no_digit() {
+    assert!(!is_valid_password("orbitlaunch"));
+}
+```
+
+### Testing that a public parser's error path actually returns Err
+A config loader that silently accepts garbage input is worse than one that crashes loudly — the integration test checks both the `Ok` and `Err` paths a real caller would hit.
+
+```rust
+// src/lib.rs
+pub fn parse_temperature(input: &str) -> Result<f32, String> {
+    input
+        .trim_end_matches('C')
+        .parse::<f32>()
+        .map_err(|_| format!("'{input}' is not a valid temperature"))
+}
+```
+
+```rust
+// tests/temperature.rs
+use my_crate::parse_temperature;
+
+#[test]
+fn parses_a_valid_reading() {
+    assert_eq!(parse_temperature("21.5C"), Ok(21.5));
+}
+
+#[test]
+fn rejects_garbage_input() {
+    assert!(parse_temperature("lukewarm").is_err());
+}
+```
+
+### Testing a blog-post slugifier against several titles
+A URL slugifier has a lot of edge cases (spaces, punctuation, capitals) — looping over a table of titles in one integration test checks all of them without repeating the assertion.
+
+```rust
+// src/lib.rs
+pub fn slugify(title: &str) -> String {
+    title
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+```
+
+```rust
+// tests/slug.rs
+use my_crate::slugify;
+
+#[test]
+fn turns_a_post_title_into_a_url_slug() {
+    let cases = [
+        ("Rust for Humans!", "rust-for-humans"),
+        ("  Leading   Spaces", "leading-spaces"),
+    ];
+
+    for (title, expected) in cases {
+        assert_eq!(slugify(title), expected);
+    }
+}
+```
+
 ## Your turn
 
 This integration test won't compile — it's reaching for something integration tests structurally can't see.

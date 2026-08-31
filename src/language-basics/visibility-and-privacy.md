@@ -128,6 +128,94 @@ fn main() {
 - **Forgetting `pub(crate)` is invisible to downstream users of a published crate.** It's for sharing across your own modules, not for exposing an API.
 - **Expecting privacy to be file-scoped.** Privacy follows the module tree, not the filesystem — two modules can share a file, or one module can span several files, and visibility rules only ever care about the module structure.
 
+## More examples
+
+### A logging library's public entry point
+Callers only ever need `info`; how the timestamp is formatted is an internal detail that can change without breaking anyone who logs a message.
+
+```rust,editable
+mod logger {
+    fn timestamp() -> &'static str {
+        "12:00:00" // private helper, internal detail
+    }
+
+    pub fn info(message: &str) {
+        println!("[{}] INFO: {}", timestamp(), message);
+    }
+}
+
+fn main() {
+    logger::info("server started");
+    // logger::timestamp(); // ERROR: private
+}
+```
+
+### Sharing a connection pool helper across your crate
+`pub(crate)` is right for plumbing like a connection string builder — other modules in this crate can call it, but it never leaks out if this crate is published as a library.
+
+```rust,editable
+mod db {
+    pub(crate) fn connection_string() -> String {
+        String::from("postgres://localhost/app")
+    }
+
+    pub fn connect() -> String {
+        format!("connected to {}", connection_string())
+    }
+}
+
+fn main() {
+    println!("{}", db::connect());
+    println!("{}", db::connection_string()); // OK: same crate
+}
+```
+
+### A validator reporting back to its parent module only
+`pub(super)` fits a submodule that exists purely to serve its parent — `signup` needs `validation`'s result, but nothing else in the crate should be able to reach into it directly.
+
+```rust,editable
+mod signup {
+    pub fn register(email: &str) -> bool {
+        validation::is_valid(email)
+    }
+
+    mod validation {
+        pub(super) fn is_valid(email: &str) -> bool {
+            email.contains('@')
+        }
+    }
+}
+
+fn main() {
+    println!("{}", signup::register("user@example.com"));
+    // signup::validation::is_valid("x"); // ERROR: not visible outside `signup`
+}
+```
+
+### Re-exporting a formatting helper at the crate root
+`pub use` lets callers write `title_case(...)` directly instead of remembering that it actually lives two modules deep inside `text_utils::format`.
+
+```rust,editable
+mod text_utils {
+    pub mod format {
+        pub fn title_case(s: &str) -> String {
+            let mut chars = s.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        }
+    }
+}
+
+pub use text_utils::format::title_case;
+
+fn main() {
+    println!("{}", title_case("rust"));                       // via the re-export
+    println!("{}", text_utils::format::title_case("humans")); // the real path still works
+}
+```
+
 ## Your turn
 
 This program tries to construct an item type from outside the module that defines it.

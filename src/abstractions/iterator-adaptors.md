@@ -175,6 +175,78 @@ Adaptor chains are great until they aren't. Once a chain grows past roughly four
 - **Assuming `.zip()` pads the shorter iterator.** It doesn't — it silently truncates to the length of the shorter side. If lengths can differ and that matters, check lengths first or use a different strategy.
 - **Chaining adaptors past the point of clarity.** A 6-step chain that took you five minutes to write will take a teammate (or future you) five minutes to read. A `for` loop with a comment is not a downgrade.
 
+## More examples
+
+### Sum only the valid donations
+Real input is messy — some entries won't parse. `filter_map` lets you drop the bad ones and total the rest in a single pass, no intermediate `Vec` needed.
+
+```rust,editable
+fn main() {
+    let donations = vec!["25", "n/a", "100", "-", "40"];
+
+    let total: i32 = donations.iter().filter_map(|d| d.parse::<i32>().ok()).sum();
+
+    println!("total raised: ${total}"); // 165
+}
+```
+
+### Combine two shifts of readings with `zip`
+`zip` isn't just for display pairs — pairing up two same-length datasets and combining them element-wise (like adding two shifts' sales) is a common use.
+
+```rust,editable
+fn main() {
+    let morning = vec![12, 8, 15];
+    let evening = vec![5, 10, 7];
+
+    let daily_totals: Vec<i32> = morning.iter().zip(evening.iter()).map(|(m, e)| m + e).collect();
+
+    println!("{:?}", daily_totals); // [17, 18, 22]
+}
+```
+
+### Number the lines of a file
+`.enumerate()` is exactly what a text editor or `cat -n` needs: pair each line with its position for display.
+
+```rust,editable
+fn main() {
+    let lines = vec!["fn main() {", "    println!(\"hi\");", "}"];
+
+    for (num, line) in lines.iter().enumerate() {
+        println!("{:>3} | {}", num + 1, line);
+    }
+}
+```
+
+### Track the hottest reading with `fold`
+`fold` isn't limited to sums — any "carry a running answer through the whole list" problem fits, like tracking a running maximum.
+
+```rust,editable
+fn main() {
+    let temps = vec![68, 75, 71, 80, 66];
+
+    let hottest = temps.iter().fold(i32::MIN, |max_so_far, &t| {
+        if t > max_so_far { t } else { max_so_far }
+    });
+
+    println!("hottest reading: {hottest}"); // 80
+}
+```
+
+### Split a sorted list at a threshold
+Given data that's already sorted — like ages sorted ascending — `take_while`/`skip_while` split it at the first point a condition stops holding, without scanning the whole list twice by hand.
+
+```rust,editable
+fn main() {
+    let ages = vec![12, 15, 17, 18, 22, 30, 45];
+
+    let minors: Vec<&i32> = ages.iter().take_while(|&&age| age < 18).collect();
+    let adults: Vec<&i32> = ages.iter().skip_while(|&&age| age < 18).collect();
+
+    println!("minors: {:?}", minors); // [12, 15, 17]
+    println!("adults: {:?}", adults); // [18, 22, 30, 45]
+}
+```
+
 ## Your turn
 
 This should shout every name in uppercase and print the list. It doesn't compile.

@@ -118,6 +118,85 @@ Reach for `.output()` when you need to *do something with* what the subprocess p
 - **Ignoring the exit status.** A subprocess can *run successfully* (no error spawning it) but still *fail its own job* (nonzero exit code) — always check `output.status.success()` or `status.success()` rather than assuming "it ran" means "it worked."
 - **Buffering huge output with `.output()`.** It holds all of stdout/stderr in memory at once — fine for a linter's summary, risky for a subprocess that streams megabytes of logs.
 
+## More examples
+
+### Counting repeated verbosity flags
+A CLI that supports `-v -v -v` for increasing verbosity just counts how many times the flag shows up in the skipped argument list.
+
+```rust,editable
+fn main() {
+    // Run locally as `myapp -v -v -v input.txt` to see verbosity climb.
+    let real_args: Vec<String> = std::env::args().skip(1).collect();
+    let verbosity = real_args.iter().filter(|a| a.as_str() == "-v").count();
+    println!("verbosity level: {verbosity}");
+}
+```
+
+### Distinct exit codes for different failures
+A conversion tool can signal *why* it failed — no arguments versus a bad file type — with different `ExitCode` values, which lets a calling script react differently to each case.
+
+```rust,editable
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.is_empty() {
+        eprintln!("usage: convert <file>");
+        return ExitCode::from(2); // usage error
+    }
+    if !args[0].ends_with(".csv") {
+        eprintln!("error: expected a .csv file");
+        return ExitCode::from(1); // processing error
+    }
+    println!("converting {}", args[0]);
+    ExitCode::SUCCESS
+}
+```
+
+### Searching a log file and reading grep's exit status
+`grep` exits `1` when it simply finds no matches — not a crash — so a tool that shells out to it has to treat a nonzero status as "nothing found," not "something broke."
+
+```rust
+// Spawning processes isn't allowed on the Playground — run this in a real project.
+use std::process::Command;
+
+fn main() {
+    let output = Command::new("grep")
+        .args(["ERROR", "app.log"])
+        .output()
+        .expect("failed to run grep");
+
+    // grep exits 1 when it simply finds nothing — that's not a crash, just "no matches".
+    if output.status.success() {
+        println!("found errors:\n{}", String::from_utf8_lossy(&output.stdout));
+    } else {
+        println!("no ERROR lines in app.log");
+    }
+}
+```
+
+### Running cargo fmt as a pre-commit check
+`.status()` lets `cargo fmt --check`'s own diff print straight to the terminal, so a pre-commit hook can just check the exit status and let the user see exactly what's unformatted.
+
+```rust
+// Spawning processes isn't allowed on the Playground — run this in a real project.
+use std::process::Command;
+
+fn main() {
+    // .status() inherits the terminal, so cargo fmt's own diff output shows up as-is.
+    let status = Command::new("cargo")
+        .args(["fmt", "--check"])
+        .current_dir("path/to/project")
+        .status()
+        .expect("failed to run cargo fmt");
+
+    if !status.success() {
+        eprintln!("code isn't formatted — run `cargo fmt` before committing");
+    }
+}
+```
+
 ## Your turn
 
 This program is supposed to print a usage message and fail with a nonzero exit code when no argument is given — but it doesn't compile.

@@ -135,6 +135,125 @@ That runs `adds_two_numbers` and `adds_negatives` (both contain `"adds"`) and sk
 - **Reading too much into the `assert_eq!` panic message.** It prints `left` and `right`, not `actual` and `expected` — Rust doesn't know which side you intended as which. The convention is `assert_eq!(actual, expected)`, but swapping the order still compiles and just flips which value shows as "left."
 - **Reusing state between tests.** Tests run in parallel by default and in no guaranteed order. Two tests that share a file, an environment variable, or other global state can clobber each other and flake intermittently.
 
+## More examples
+
+### Validating a signup form's username
+A signup form's username validator is a perfect candidate for tests — one function, several rules, and each rule deserves its own test so a failure points at exactly what broke.
+
+```rust
+fn is_valid_username(name: &str) -> bool {
+    !name.is_empty() && name.len() <= 20 && name.chars().all(|c| c.is_alphanumeric() || c == '_')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_a_normal_username() {
+        assert!(is_valid_username("ferris_the_crab"));
+    }
+
+    #[test]
+    fn rejects_an_empty_username() {
+        assert!(!is_valid_username(""));
+    }
+
+    #[test]
+    fn rejects_spaces() {
+        assert!(!is_valid_username("has space"));
+    }
+}
+```
+
+### Calculating a shopping cart discount
+A discount function has edge cases — no discount, a threshold just met, a threshold comfortably passed — and each one is a separate test instead of a mental note to check by hand.
+
+```rust
+fn discount_percent(cart_total: f64) -> f64 {
+    if cart_total >= 100.0 {
+        0.10
+    } else if cart_total >= 50.0 {
+        0.05
+    } else {
+        0.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_discount_below_fifty() {
+        assert_eq!(discount_percent(20.0), 0.0);
+    }
+
+    #[test]
+    fn five_percent_at_fifty() {
+        assert_eq!(discount_percent(50.0), 0.05);
+    }
+
+    #[test]
+    fn ten_percent_at_one_hundred() {
+        assert_eq!(discount_percent(150.0), 0.10);
+    }
+}
+```
+
+### Parsing a config line, testing the error path
+A config parser needs to fail loudly on bad input, not silently return garbage — testing the `Err` case is just as important as testing the happy path.
+
+```rust
+fn parse_port(line: &str) -> Result<u16, String> {
+    line.trim()
+        .parse::<u16>()
+        .map_err(|_| format!("invalid port: {line}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_a_valid_port() {
+        assert_eq!(parse_port("8080"), Ok(8080));
+    }
+
+    #[test]
+    fn rejects_non_numeric_input() {
+        assert!(parse_port("localhost").is_err());
+    }
+}
+```
+
+### Proving a stack panics on underflow
+A stack-based structure that's documented to panic on underflow needs a test that proves it actually panics, not one that hopes it does.
+
+```rust
+struct FixedStack {
+    items: Vec<i32>,
+}
+
+impl FixedStack {
+    fn pop(&mut self) -> i32 {
+        self.items.pop().expect("pop from an empty stack")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "pop from an empty stack")]
+    fn popping_an_empty_stack_panics() {
+        let mut stack = FixedStack { items: vec![] };
+        stack.pop();
+    }
+}
+```
+
 ## Your turn
 
 This test module has two bugs: it won't compile, and even if it did, one test would fail for the wrong reason. Find both.

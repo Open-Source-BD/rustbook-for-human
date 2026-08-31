@@ -96,6 +96,118 @@ This cuts both ways:
 - **Trying to clone the `Receiver`.** Only `Sender` is `Clone`. With `std::sync::mpsc` there's always exactly one consumer — if you need multiple readers, look at a different crate (or hand out work via a shared queue instead).
 - **Assuming `send()` blocks.** The default channel is unbounded — `send` returns immediately, buffering the value. If you want backpressure (the sender blocks when the buffer is full), use `mpsc::sync_channel(bound)` instead.
 
+## More examples
+
+### Streaming progress updates to a UI
+A background job (a file download, a big export) wants to report how far along it is, while the main thread just prints whatever comes in — this is the classic producer/consumer split.
+
+```rust,editable
+use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        for pct in [25, 50, 75, 100] {
+            tx.send(pct).unwrap();
+        }
+    });
+
+    for pct in rx {
+        println!("progress: {pct}%");
+    }
+    println!("done!");
+}
+```
+
+### Many producers, one collector
+Say three players finish a game on their own threads and need to report a score back to a single scoreboard — clone `tx` once per thread, and `rx` sees everything as it arrives.
+
+```rust,editable
+use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    for player in ["alice", "bob", "carol"] {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            tx.send((player, player.len() as u32 * 10)).unwrap();
+        });
+    }
+    drop(tx);
+
+    let mut total = 0;
+    for (name, score) in rx {
+        println!("{name} scored {score}");
+        total += score;
+    }
+    println!("total: {total}");
+}
+```
+
+### A work queue: send tasks, receive results back
+This is the shape behind most "worker pool" designs — one channel carries jobs in, a worker does the (pretend) expensive work, and a second channel carries results back out.
+
+```rust,editable
+use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (task_tx, task_rx) = mpsc::channel::<u32>();
+    let (result_tx, result_rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        for n in task_rx {
+            result_tx.send(n * n).unwrap(); // pretend this is expensive work
+        }
+    });
+
+    for n in 1..=5 {
+        task_tx.send(n).unwrap();
+    }
+    drop(task_tx); // tell the worker there's no more work coming
+
+    for squared in result_rx {
+        println!("squared: {squared}");
+    }
+}
+```
+
+### Polling without blocking, using `try_recv()`
+Sometimes you can't afford to sit and block on `rx.recv()` — a game loop or UI loop needs to check "did anything arrive?" and keep moving either way. `try_recv()` never blocks: it returns immediately with whatever it finds.
+
+```rust,editable
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(50));
+        tx.send("finally ready").unwrap();
+    });
+
+    loop {
+        match rx.try_recv() {
+            Ok(msg) => {
+                println!("got: {msg}");
+                break;
+            }
+            Err(mpsc::TryRecvError::Empty) => {
+                println!("...still waiting, doing other work");
+                thread::sleep(Duration::from_millis(10));
+            }
+            Err(mpsc::TryRecvError::Disconnected) => break,
+        }
+    }
+}
+```
+
 ## Your turn
 
 This program spawns three worker threads that each send a message, then reads them all in `main`. It doesn't compile.

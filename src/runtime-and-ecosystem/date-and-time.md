@@ -81,6 +81,92 @@ fn main() {
 - **Comparing a `Utc` time to a `Local` time directly.** They represent the same instant differently depending on the machine's timezone; convert one to match the other (`.with_timezone(&Utc)`) before comparing.
 - **Assuming `duration_since` always succeeds.** It returns `Err` if the earlier time is actually later — don't reach for `.unwrap()` on it without thinking about why that `Result` exists.
 
+## More examples
+
+### Timing a sort to catch a slow algorithm early
+Sorting is one of the first things worth timing when a data pipeline feels sluggish — wrapping just the `sort()` call in `Instant::now()`/`.elapsed()` isolates that one step from everything around it.
+
+```rust,editable
+use std::time::Instant;
+
+fn main() {
+    let mut nums: Vec<i32> = (0..50_000).rev().collect();
+
+    let start = Instant::now();
+    nums.sort();
+    let elapsed = start.elapsed();
+
+    println!("sorted {} numbers in {elapsed:?}", nums.len());
+}
+```
+
+### Stamping a log entry with when it happened
+A log entry needs to record *when* it happened, not how long anything took — seconds since the Unix epoch from `SystemTime` is a compact, storable timestamp for exactly that.
+
+```rust,editable
+use std::time::{SystemTime, UNIX_EPOCH};
+
+struct LogEntry {
+    message: String,
+    created_at: u64, // seconds since the Unix epoch
+}
+
+fn main() {
+    let created_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock is before 1970")
+        .as_secs();
+
+    let entry = LogEntry {
+        message: "server started".to_string(),
+        created_at,
+    };
+
+    println!("[{}] {}", entry.created_at, entry.message);
+}
+```
+
+### Showing when an account was created
+A profile page wants "joined August 31, 2026," not a raw timestamp — `chrono`'s `.format()` turns a `DateTime<Utc>` into exactly that.
+
+```rust
+use chrono::{DateTime, Utc};
+
+struct Account {
+    username: String,
+    joined: DateTime<Utc>,
+}
+
+fn main() {
+    let account = Account {
+        username: "shaon07".to_string(),
+        joined: Utc::now(),
+    };
+
+    println!(
+        "{} joined on {}",
+        account.username,
+        account.joined.format("%B %d, %Y")
+    );
+}
+```
+
+### Counting down to a deadline
+A project tracker's "days left" number is just calendar subtraction — parse the deadline with `NaiveDate`, subtract today, and read `.num_days()` off the result.
+
+```rust
+use chrono::{Local, NaiveDate};
+
+fn main() {
+    let deadline = NaiveDate::parse_from_str("2026-12-25", "%Y-%m-%d")
+        .expect("invalid date");
+    let today = Local::now().date_naive();
+
+    let days_left = (deadline - today).num_days();
+    println!("{days_left} day(s) until the deadline");
+}
+```
+
 ## Your turn
 
 This program is supposed to print how long a loop took — but it doesn't compile.

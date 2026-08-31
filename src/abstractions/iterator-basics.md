@@ -126,6 +126,87 @@ Nothing happens until something pulls values out — by calling `.next()` direct
 - **Forgetting to dereference in `.iter_mut()`.** The loop variable is `&mut T`, not `T` — writing `n = 5` won't compile, you need `*n = 5` to write through the reference.
 - **Reaching for `.into_iter()` out of habit.** If you only need to *read* the items, `.iter()` is almost always the right call — it doesn't give up the collection.
 
+## More examples
+
+### Print a guest list without losing it
+You often need to display a collection *and* keep using it afterward — printing a list shouldn't be destructive.
+
+```rust,editable
+fn main() {
+    let guests = vec![String::from("Ferris"), String::from("Ada"), String::from("Grace")];
+
+    for guest in &guests {
+        println!("welcome, {guest}!");
+    }
+
+    println!("{} guests still in the list: {:?}", guests.len(), guests);
+}
+```
+
+### Shout every tag in place
+Normalizing data in place — like uppercasing every tag before saving — is exactly what `.iter_mut()` is for: change items without rebuilding the whole collection.
+
+```rust,editable
+fn main() {
+    let mut tags = vec![String::from("rust"), String::from("wasm"), String::from("cli")];
+
+    for tag in tags.iter_mut() {
+        *tag = tag.to_uppercase();
+    }
+
+    println!("{:?}", tags); // ["RUST", "WASM", "CLI"]
+}
+```
+
+### Move pending orders into an archive
+When you're done with a collection and want to hand its contents to something else — like moving orders out of a "pending" list — `.into_iter()` transfers ownership instead of copying.
+
+```rust,editable
+fn main() {
+    let pending = vec![String::from("order-1"), String::from("order-2")];
+
+    let archived: Vec<String> = pending.into_iter().collect();
+
+    println!("{:?}", archived);
+    // pending is gone now -- it was moved, not borrowed
+}
+```
+
+### Walk a `HashMap` of scores
+Maps come up constantly for lookups — a `for` loop over `&map` gives you `(key, value)` pairs, one per entry.
+
+```rust,editable
+use std::collections::HashMap;
+
+fn main() {
+    let mut scores = HashMap::new();
+    scores.insert("Ferris", 92);
+    scores.insert("Ada", 88);
+
+    for (name, score) in &scores {
+        println!("{name}: {score}");
+    }
+}
+```
+
+### Process a job queue and stop on a signal
+Driving an iterator by hand with `.next()` is useful when you need to react mid-loop — like bailing out the moment you see a stop signal.
+
+```rust,editable
+fn main() {
+    let jobs = vec!["resize", "compress", "STOP", "upload"];
+    let mut iter = jobs.iter();
+
+    while let Some(job) = iter.next() {
+        if *job == "STOP" {
+            println!("halting: stop signal received");
+            break;
+        }
+        println!("running job: {job}");
+    }
+}
+```
+
 ## Your turn
 
 This program should greet every name and then report how many names there were. It doesn't compile.

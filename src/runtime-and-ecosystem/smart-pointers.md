@@ -147,6 +147,123 @@ with an interior-mutability type (`RefCell` for `Rc`, `Mutex` for `Arc`) — tha
 - **Creating reference cycles with `Rc`.** If two `Rc`s point at each other, their counts never reach
   zero and the memory leaks. Use `Weak` references to break cycles (an advanced follow-up).
 
+## More examples
+
+### A list of shapes with different types
+A drawing program needs to store circles and squares in the same `Vec` even though they're different types — `Box<dyn Shape>` gives every shape a uniform, heap-allocated handle the compiler can treat the same way.
+
+```rust,editable
+trait Shape {
+    fn area(&self) -> f64;
+}
+
+struct Circle { radius: f64 }
+struct Square { side: f64 }
+
+impl Shape for Circle {
+    fn area(&self) -> f64 { std::f64::consts::PI * self.radius * self.radius }
+}
+
+impl Shape for Square {
+    fn area(&self) -> f64 { self.side * self.side }
+}
+
+fn main() {
+    let shapes: Vec<Box<dyn Shape>> = vec![
+        Box::new(Circle { radius: 2.0 }),
+        Box::new(Square { side: 3.0 }),
+    ];
+
+    for shape in &shapes {
+        println!("area: {:.2}", shape.area());
+    }
+}
+```
+
+### Sharing a parsed config across request handlers
+A web server's route handlers all need to read the same parsed config — `Rc` lets every handler hold a cheap handle to one shared copy instead of cloning the whole struct per request.
+
+```rust,editable
+use std::rc::Rc;
+
+struct Config {
+    max_connections: u32,
+}
+
+fn handle_request(id: u32, config: &Rc<Config>) {
+    println!("handler {id} sees max_connections = {}", config.max_connections);
+}
+
+fn main() {
+    let config = Rc::new(Config { max_connections: 100 });
+
+    for id in 0..3 {
+        let handler_config = Rc::clone(&config);
+        handle_request(id, &handler_config);
+    }
+
+    println!("all handlers done, config still alive");
+}
+```
+
+### A dictionary shared by spellcheck workers
+A spellchecker's word list is loaded once but needs to be checked by many worker threads at once — `Arc` shares the read-only dictionary without copying it per thread.
+
+```rust,editable
+use std::sync::Arc;
+use std::thread;
+
+fn main() {
+    let dictionary = Arc::new(vec!["rust", "ferris", "cargo", "crate"]);
+    let words_to_check = vec!["rust", "python", "cargo"];
+    let mut handles = vec![];
+
+    for word in words_to_check {
+        let dictionary = Arc::clone(&dictionary);
+        handles.push(thread::spawn(move || {
+            let found = dictionary.contains(&word);
+            println!("{word}: {}", if found { "known" } else { "unknown" });
+        }));
+    }
+
+    for h in handles {
+        h.join().unwrap();
+    }
+}
+```
+
+### Shrinking a token enum with Box
+A `Token` enum where one variant carries a big string and the others don't makes every `Token` as large as the biggest variant — boxing just that variant keeps the whole enum small.
+
+```rust,editable
+enum Token {
+    Number(i64),
+    Whitespace,
+    // Without Box, this variant would make every Token as large as a String (24+ bytes).
+    Comment(Box<String>),
+}
+
+fn describe(token: &Token) {
+    match token {
+        Token::Number(n) => println!("number: {n}"),
+        Token::Whitespace => println!("whitespace"),
+        Token::Comment(text) => println!("comment: {text}"),
+    }
+}
+
+fn main() {
+    let tokens = vec![
+        Token::Number(42),
+        Token::Whitespace,
+        Token::Comment(Box::new(String::from("TODO: fix this"))),
+    ];
+
+    for token in &tokens {
+        describe(token);
+    }
+}
+```
+
 ## Your turn
 
 This program wants two owners to share the same string via `Rc`, then print how many owners there

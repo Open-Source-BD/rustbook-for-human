@@ -106,6 +106,94 @@ This means a feature must only ever *add* capability (extra functions, extra imp
 - **Designing a feature that changes behavior instead of adding it.** Because features unify across the whole build, a feature that flips existing behavior (rather than adding a new function or impl) can silently change how a *different* crate in the same build behaves, purely because something else in the graph turned it on.
 - **Never testing `--no-default-features` or feature combinations.** Code behind a feature that's always on in your own testing can silently rot — it compiles for you, but breaks the moment someone builds without your defaults.
 
+## More examples
+
+### Per-OS config file location
+A settings file needs a different path on Windows than on Linux or macOS, and `#[cfg(target_os = ...)]` bakes in the right one before the binary is even built.
+
+```rust,editable
+fn main() {
+    #[cfg(target_os = "windows")]
+    let config_path = "C:\\Users\\me\\AppData\\Roaming\\myapp\\config.toml";
+
+    #[cfg(not(target_os = "windows"))]
+    let config_path = "/home/me/.config/myapp/config.toml";
+
+    println!("loading settings from {config_path}");
+}
+```
+
+### Test-only fixture data for a shopping cart
+`#[cfg(test)]` lets a module carry sample data for its own tests without that data ever shipping inside the real binary.
+
+```rust,editable
+fn cart_total(prices: &[f64]) -> f64 {
+    prices.iter().sum()
+}
+
+#[cfg(test)]
+fn sample_cart() -> Vec<f64> {
+    vec![9.99, 4.50, 12.25] // only compiled in when running `cargo test`
+}
+
+fn main() {
+    let prices = [9.99, 4.50, 12.25];
+    println!("cart total: ${:.2}", cart_total(&prices));
+}
+```
+
+### A CLI's colorized output behind a feature flag
+A command-line tool's colored output is nice-to-have, not core — gating it behind a `color` feature means everyone who doesn't ask for it never even compiles that code path.
+
+```toml
+[features]
+color = []
+```
+
+```rust
+#[cfg(feature = "color")]
+fn highlight(text: &str) -> String {
+    format!("\x1b[32m{text}\x1b[0m") // green
+}
+
+#[cfg(not(feature = "color"))]
+fn highlight(text: &str) -> String {
+    text.to_string()
+}
+
+fn main() {
+    println!("{}", highlight("build succeeded"));
+}
+```
+
+### Opt-in load-test randomness for a benchmarking CLI
+A benchmarking CLI might simulate jittery network delay with the `rand` crate, but most runs want deterministic timing — an optional `fuzz` feature keeps that dependency out of the default build.
+
+```toml
+[dependencies]
+rand = { version = "0.8", optional = true }
+
+[features]
+fuzz = ["dep:rand"]
+```
+
+```rust
+#[cfg(feature = "fuzz")]
+fn random_delay_ms() -> u64 {
+    use rand::Rng;
+    rand::thread_rng().gen_range(50..500)
+}
+
+#[cfg(not(feature = "fuzz"))]
+fn random_delay_ms() -> u64 {
+    200 // fixed, predictable delay when fuzzing is off
+}
+
+fn main() {
+    println!("simulated request delay: {}ms", random_delay_ms());
+}
+```
+
 ## Your turn
 
 This `Cargo.toml` and `lib.rs` are supposed to make `serde_json` an opt-in dependency behind a `json` feature — someone who doesn't need JSON shouldn't have to compile it. But `serde_json` still gets compiled into *every* build, feature or not, and the feature does nothing:

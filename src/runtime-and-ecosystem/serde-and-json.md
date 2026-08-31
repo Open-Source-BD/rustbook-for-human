@@ -124,6 +124,97 @@ This is how you plan for "extra or missing fields" without your program falling 
 - **Forgetting `&` when serializing.** `serde_json::to_string(&value)` takes a reference; passing
   the value by move works too but often you still need it afterward, so borrow it.
 
+## More examples
+
+### Saving app settings as a readable config file
+`to_string_pretty` formats the JSON with indentation and newlines, which matters when the output is a config file a human might open and edit by hand.
+
+```rust
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+struct AppConfig {
+    theme: String,
+    max_connections: u32,
+}
+
+fn main() {
+    let config = AppConfig { theme: "dark".to_string(), max_connections: 100 };
+
+    let json = serde_json::to_string_pretty(&config).unwrap();
+    println!("{json}");
+}
+```
+
+### Parsing a JSON array from an API response
+An API rarely returns just one object — deserializing straight into a `Vec<Product>` turns a whole JSON array into a ready-to-use list in one call.
+
+```rust
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Product {
+    id: u64,
+    name: String,
+}
+
+fn main() {
+    let response = r#"[{"id":1,"name":"Keyboard"},{"id":2,"name":"Mouse"}]"#;
+
+    let products: Vec<Product> = serde_json::from_str(response).unwrap();
+    for p in &products {
+        println!("{}: {}", p.id, p.name);
+    }
+}
+```
+
+### Reading a webhook payload with an unpredictable shape
+`serde_json::Value` skips defining a struct entirely — useful for a webhook where different event types carry different fields and you just need to pull out a couple of keys.
+
+```rust
+use serde_json::Value;
+
+fn main() {
+    let payload = r#"{"event":"payment.succeeded","amount":2599,"currency":"usd"}"#;
+
+    let event: Value = serde_json::from_str(payload).unwrap();
+    println!("event: {}", event["event"]);
+    println!("amount: {}", event["amount"]);
+}
+```
+
+### Nested structs for an order payload
+An order isn't flat — it has a list of line items — and serde walks nested structs and `Vec`s automatically, no manual recursion required.
+
+```rust
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct LineItem {
+    sku: String,
+    quantity: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Order {
+    order_id: u64,
+    items: Vec<LineItem>,
+}
+
+fn main() {
+    let order = Order {
+        order_id: 9001,
+        items: vec![
+            LineItem { sku: "SKU-1".to_string(), quantity: 2 },
+            LineItem { sku: "SKU-2".to_string(), quantity: 1 },
+        ],
+    };
+
+    let json = serde_json::to_string(&order).unwrap();
+    println!("{json}");
+}
+```
+
 ## Your turn
 
 This is a **fill-in-the-blank**, since serde can't run on the Playground. This struct should

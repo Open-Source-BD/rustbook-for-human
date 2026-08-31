@@ -109,6 +109,83 @@ fn main() {
 - **Over-stuffing a closure.** A closure with twenty lines of logic is harder to read than a named function. Keep closures short and near their use; promote big logic to a real `fn`.
 - **Forgetting the return type/expression rule.** In `|x| x + 1`, there's no `;` after `x + 1` — adding one (`|x| { x + 1; }`) turns it into a closure that returns nothing (`()`), which usually breaks the caller.
 
+## More examples
+
+### Sort products by a custom key
+`sort_by_key` takes a closure that picks the value to sort by — here, sorting a product list by price instead of name.
+
+```rust,editable
+fn main() {
+    let mut products = vec![("mouse", 25), ("keyboard", 60), ("mat", 10)];
+
+    products.sort_by_key(|&(_, price)| price);
+
+    println!("{:?}", products); // [("mat", 10), ("mouse", 25), ("keyboard", 60)]
+}
+```
+
+### A counter closure that remembers state
+A closure that mutates a captured variable across calls — like a request counter or ID generator — needs `FnMut`, which is why it's stored in a `mut` binding.
+
+```rust,editable
+fn main() {
+    let mut count = 0;
+    let mut tick = || {
+        count += 1;
+        count
+    };
+
+    println!("{}", tick()); // 1
+    println!("{}", tick()); // 2
+    println!("{}", tick()); // 3
+}
+```
+
+### A function that builds a closure
+Sometimes you want a *family* of closures — like discount calculators for different percentages. A function can return one, tailored by its arguments.
+
+```rust,editable
+fn make_discounter(percent: f64) -> impl Fn(f64) -> f64 {
+    move |price| price - price * percent / 100.0
+}
+
+fn main() {
+    let ten_percent_off = make_discounter(10.0);
+    println!("{}", ten_percent_off(200.0)); // 180
+    println!("{}", ten_percent_off(50.0));  // 45
+}
+```
+
+### Pass a closure as a callback
+Handing a closure into a function as "what to do with each item" is a common pattern for things like processing orders one at a time.
+
+```rust,editable
+fn process_orders(orders: &[&str], on_each: impl Fn(&str)) {
+    for order in orders {
+        on_each(order);
+    }
+}
+
+fn main() {
+    let orders = ["order-1", "order-2", "order-3"];
+    process_orders(&orders, |o| println!("shipping {o}"));
+}
+```
+
+### Filter with a captured threshold
+A closure that reaches out and grabs a local variable — like a reorder threshold — is what makes `.filter()` so handy for one-off business rules.
+
+```rust,editable
+fn main() {
+    let inventory = vec![5, 12, 3, 20, 8];
+    let low_stock_limit = 10;
+
+    let low_stock: Vec<&i32> = inventory.iter().filter(|&&qty| qty < low_stock_limit).collect();
+
+    println!("reorder these: {:?}", low_stock); // [5, 3, 8]
+}
+```
+
 ## Your turn
 
 This should build a closure that adds a captured `bonus` to any score, then apply it. It doesn't compile — the closure syntax is wrong.

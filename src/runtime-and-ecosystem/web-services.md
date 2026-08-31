@@ -150,6 +150,160 @@ a dedicated thread. Don't quietly drop blocking code into an async handler.
 - **Forgetting `#[derive(Serialize)]` on JSON responses.** `Json(value)` needs `value` to be
   serializable; without the derive you get a trait-bound error.
 
+## More examples
+
+These snippets need Axum, serde, and Tokio, so none of them run on the Playground — read them the
+way you'd read a recipe, then try the shapes in a real `cargo new` project.
+
+### Returning a list, not just one item
+
+A dashboard rarely wants a single record — it wants the whole list. The pattern is identical to a
+single `Json<T>` response, just with `Vec<T>` as the type:
+
+```rust
+use axum::{routing::get, Json, Router};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct Task {
+    id: u64,
+    title: String,
+    done: bool,
+}
+
+async fn list_tasks() -> Json<Vec<Task>> {
+    Json(vec![
+        Task { id: 1, title: "Write lesson".into(), done: true },
+        Task { id: 2, title: "Review PR".into(), done: false },
+    ])
+}
+
+fn router() -> Router {
+    Router::new().route("/tasks", get(list_tasks))
+}
+```
+
+### Reading a piece of the URL with `Path`
+
+A profile page needs to know *which* user was requested. Axum captures a segment of the URL and
+hands it to your handler as a typed value — no manual string splitting:
+
+```rust
+use axum::{extract::Path, routing::get, Router};
+
+async fn get_user(Path(id): Path<u64>) -> String {
+    format!("looking up user #{id}")
+}
+
+fn router() -> Router {
+    // matches GET /users/42, /users/7, ...
+    Router::new().route("/users/{id}", get(get_user))
+}
+```
+
+Axum parses `id` straight into a `u64` for you; if someone requests `/users/not-a-number`, the
+request is rejected before your handler even runs.
+
+### Reading `?q=...&limit=...` with `Query`
+
+Search boxes and filters live in the query string, not the path. `Query<T>` deserializes it into a
+struct the same way `Json<T>` deserializes a request body:
+
+```rust
+use axum::{extract::Query, routing::get, Router};
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct SearchParams {
+    q: String,
+    limit: Option<u32>,
+}
+
+async fn search(Query(params): Query<SearchParams>) -> String {
+    let limit = params.limit.unwrap_or(10);
+    format!("searching for '{}' (limit {})", params.q, limit)
+}
+
+fn router() -> Router {
+    // GET /search?q=rust&limit=5
+    Router::new().route("/search", get(search))
+}
+```
+
+`limit` is `Option<u32>` because it's fine for a caller to omit it — `unwrap_or(10)` supplies a
+sensible default when they do.
+
+### One shared pool, many handlers
+
+The earlier `AppState` example showed one handler reading shared state. The real payoff shows up
+once *several* handlers share the exact same pool — nobody opens a fresh database connection per
+route:
+
+```rust
+use axum::{extract::State, routing::get, Router};
+use std::sync::Arc;
+
+// In a real app this would be a sqlx::PgPool or similar connection pool.
+struct Db;
+
+#[derive(Clone)]
+struct AppState {
+    db: Arc<Db>,
+}
+
+async fn list_products(State(state): State<AppState>) -> String {
+    let _pool = &state.db; // the same pool every handler shares
+    "querying products".to_string()
+}
+
+async fn list_orders(State(state): State<AppState>) -> String {
+    let _pool = &state.db; // no new connection created here either
+    "querying orders".to_string()
+}
+
+fn router(state: AppState) -> Router {
+    Router::new()
+        .route("/products", get(list_products))
+        .route("/orders", get(list_orders))
+        .with_state(state)
+}
+```
+
+Cloning `AppState` is cheap — it's just cloning the `Arc`, a reference count bump, not the database
+connection itself.
+
+### Combining `Path` and `State` in one handler
+
+Real handlers usually need more than one extractor at once — here, the URL supplies *which* user,
+and shared state supplies *how* to look them up:
+
+```rust
+use axum::{extract::{Path, State}, routing::get, Json, Router};
+use serde::Serialize;
+
+#[derive(Clone)]
+struct AppState {
+    db: std::sync::Arc<String>, // pretend connection pool
+}
+
+#[derive(Serialize)]
+struct User {
+    id: u64,
+    name: String,
+}
+
+async fn get_user(State(_state): State<AppState>, Path(id): Path<u64>) -> Json<User> {
+    Json(User { id, name: format!("user-{id}") })
+}
+
+fn router(state: AppState) -> Router {
+    Router::new().route("/users/{id}", get(get_user)).with_state(state)
+}
+```
+
+Axum extractors compose freely like this — list as many as the handler needs, in any order, and
+each one pulls out exactly the piece of the request it's responsible for.
+
 ## Your turn
 
 This is a **spot-the-bug**, since a web server can't run on the Playground. This handler is supposed

@@ -136,6 +136,72 @@ the caller has an array, a `Vec`, or another slice.
   If you drop or move the original `String` while a slice of it is still in use, the compiler stops
   you — the window would be pointing at boxes that no longer exist.
 
+## More examples
+
+### Grabbing the middle innings of a game log
+A sports app stores scores for every inning but only wants to show innings 3 through 5 without copying the whole game.
+
+```rust,editable
+fn main() {
+    let innings = vec![1, 0, 2, 3, 0, 1, 4];
+    let middle = &innings[2..5];
+    println!("{:?}", middle);
+}
+```
+
+### A function that works with arrays and `Vec`s alike
+A stats helper shouldn't care whether the caller has a fixed-size array or a growable `Vec` — accepting a slice lets it work with both.
+
+```rust,editable
+fn average(nums: &[f64]) -> f64 {
+    nums.iter().sum::<f64>() / nums.len() as f64
+}
+
+fn main() {
+    let fixed = [1.0, 2.0, 3.0];
+    let growable = vec![4.0, 5.0, 6.0, 7.0];
+    println!("{}", average(&fixed));
+    println!("{}", average(&growable));
+}
+```
+
+### Splitting a sentence into words
+A search box wants each word a user typed on its own, so it can match them individually against an index.
+
+```rust,editable
+fn main() {
+    let query = String::from("best rust books for beginners");
+    let words: Vec<&str> = query.split_whitespace().collect();
+    println!("{:?}", words);
+}
+```
+
+### Splitting a buffer into two mutable halves
+A packet buffer needs its header and payload processed separately, in place, without copying — `split_at_mut` hands back two non-overlapping mutable slices.
+
+```rust,editable
+fn main() {
+    let mut buffer = [1, 2, 3, 4, 5, 6];
+    let (header, payload) = buffer.split_at_mut(2);
+    header[0] = 99;
+    payload[0] = 42;
+    println!("header: {:?}, payload: {:?}", header, payload);
+}
+```
+
+### Dealing a deck into hands
+A card game needs to split a shuffled deck into equal-sized hands without allocating a new `Vec` for each one.
+
+```rust,editable
+fn main() {
+    let deck: Vec<i32> = (1..=10).collect();
+    let hands: Vec<&[i32]> = deck.chunks(5).collect();
+    for hand in &hands {
+        println!("{:?}", hand);
+    }
+}
+```
+
 ## Your turn
 
 This program wants to print the first three letters, `rus`. It doesn't compile. Fix it.

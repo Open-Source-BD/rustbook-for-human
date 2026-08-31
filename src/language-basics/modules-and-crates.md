@@ -97,6 +97,77 @@ Everything you get for free — `String`, `println!`, `Vec` — comes from a lib
 - **Wrong path with `::`.** `parser.parse()` (a dot) is not how you reach into a module — that's method syntax. Use `parser::parse()` with the double colon for paths.
 - **`pub` on the function but not its enclosing module.** If a module is private, marking an inner function `pub` still won't let outside code reach it — the whole path must be reachable. Make the parent module `pub` too if needed.
 
+## More examples
+
+### A CLI's flag parser gets its own drawer
+Keeping argument-parsing code inside a `cli` module means `main` stays focused on running the program, not decoding strings.
+
+```rust,editable
+mod cli {
+    pub fn parse_flag(arg: &str) -> bool {
+        arg == "--verbose" || arg == "-v"
+    }
+}
+
+fn main() {
+    let args = ["build", "--verbose"];
+    let verbose = args.iter().any(|a| cli::parse_flag(a));
+    println!("verbose mode: {}", verbose);
+}
+```
+
+### Nested modules for a game engine's systems
+A game engine groups unrelated systems — physics, rendering, audio — into their own nested modules so their internals don't tangle together.
+
+```rust,editable
+mod game {
+    pub mod physics {
+        pub fn apply_gravity(velocity_y: f64) -> f64 {
+            velocity_y - 9.8
+        }
+    }
+}
+
+fn main() {
+    let v = game::physics::apply_gravity(0.0);
+    println!("velocity after one tick: {v}");
+}
+```
+
+### An inventory module for an online store
+Stock-checking logic lives behind one `pub` function in an `inventory` module, so the rest of the store's code doesn't need to know how availability is calculated.
+
+```rust,editable
+mod inventory {
+    pub fn in_stock(quantity: u32) -> bool {
+        quantity > 0
+    }
+}
+
+fn main() {
+    let quantity = 0;
+    println!("in stock? {}", inventory::in_stock(quantity));
+}
+```
+
+### A config module for a web server's defaults
+Bundling default settings into a `config` module gives the rest of the crate one path to reach for instead of scattering constants everywhere.
+
+```rust,editable
+mod config {
+    pub const DEFAULT_PORT: u16 = 8080;
+
+    pub fn describe() -> String {
+        format!("listening on port {DEFAULT_PORT}")
+    }
+}
+
+fn main() {
+    println!("{}", config::describe());
+    println!("port constant: {}", config::DEFAULT_PORT);
+}
+```
+
 ## Your turn
 
 This program tries to use a function from a module, but it won't compile. Two things are wrong. Fix it so it prints the length. Press ▶ Run.

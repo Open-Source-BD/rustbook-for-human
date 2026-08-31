@@ -116,6 +116,96 @@ Unlike some languages, you can call a function that's defined *below* where you 
 - **Mismatched return type.** If you say `-> i32` but the last expression is text, you get "mismatched types." The declared type and the actual returned value must agree.
 - **Adding `;` after an `if`-expression you meant to return.** `fn f() -> i32 { if c { 1 } else { 2 }; }` throws the value away. Drop the final `;`.
 
+## More examples
+
+### A guard clause for a quick exit
+When one condition makes the rest of the function pointless, return immediately instead of nesting everything else inside an `else`.
+
+```rust,editable
+fn discount_price(price: f64, is_member: bool) -> f64 {
+    if !is_member {
+        return price; // guard clause: no discount, leave early
+    }
+    price * 0.9
+}
+
+fn main() {
+    println!("{}", discount_price(100.0, false));
+    println!("{}", discount_price(100.0, true));
+}
+```
+
+### Taking a slice instead of a `Vec`
+Writing the parameter as `&[i32]` lets the function accept an array, a `Vec`, or any borrowed chunk of one — it doesn't care how the caller stored the data.
+
+```rust,editable
+fn average(scores: &[i32]) -> f64 {
+    let sum: i32 = scores.iter().sum();
+    sum as f64 / scores.len() as f64
+}
+
+fn main() {
+    let quiz1 = [90, 85, 78];
+    let quiz2 = vec![100, 95];
+    println!("{:.1}", average(&quiz1)); // works on an array
+    println!("{:.1}", average(&quiz2)); // and on a Vec
+}
+```
+
+### Returning several values as a tuple
+Finding both the smallest and largest value in one pass means the function has two answers to hand back — a tuple lets it return them together.
+
+```rust,editable
+fn min_max(values: &[i32]) -> (i32, i32) {
+    let mut min = values[0];
+    let mut max = values[0];
+    for &v in values {
+        if v < min { min = v; }
+        if v > max { max = v; }
+    }
+    (min, max)
+}
+
+fn main() {
+    let (lo, hi) = min_max(&[4, 9, 1, 7]);
+    println!("low {lo}, high {hi}");
+}
+```
+
+### A recursive function
+Factorial is naturally defined in terms of itself — `5!` is `5 * 4!` — so a function that calls itself is the most direct way to write it.
+
+```rust,editable
+fn factorial(n: u64) -> u64 {
+    if n == 0 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+fn main() {
+    println!("5! = {}", factorial(5));
+}
+```
+
+### One function, reused everywhere the logic is needed
+The moment you format a price in two places, you risk the two copies drifting apart. A function keeps the formatting rule in exactly one spot.
+
+```rust,editable
+fn format_price(cents: u32) -> String {
+    format!("${}.{:02}", cents / 100, cents % 100)
+}
+
+fn main() {
+    let item = 1999;
+    let tax = 160;
+    println!("item: {}", format_price(item));
+    println!("tax: {}", format_price(tax));
+    println!("total: {}", format_price(item + tax));
+}
+```
+
 ## Your turn
 
 This function is meant to double a number and return it, but it doesn't compile. Two things are wrong. Fix it. Press ▶ Run.

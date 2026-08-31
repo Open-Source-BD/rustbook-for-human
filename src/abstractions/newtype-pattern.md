@@ -97,6 +97,96 @@ For a wrapper you want to feel more like the type it holds (e.g. calling `String
 - **Forgetting the newtype has no `Display`/`Debug` by default.** Printing a bare `Meters(1.8)` with `{}` fails to compile until you either `#[derive(Debug)]` (for `{:?}`) or implement `Display` yourself (for `{}`) — wrapping a printable type doesn't make the wrapper printable.
 - **Reaching for a newtype when the orphan rule isn't actually the problem.** If you own the type already, just `impl Trait for YourType` directly — no wrapper needed. Newtypes solve orphan-rule blocks and type confusion, not every design problem.
 
+## More examples
+
+### Preventing unit mix-ups in a function signature
+A race-length calculator should only ever see meters — wrapping feet in their own type forces the conversion to happen explicitly, instead of silently dividing meters by feet.
+
+```rust,editable
+struct Meters(f64);
+struct Feet(f64);
+
+impl Feet {
+    fn to_meters(&self) -> Meters {
+        Meters(self.0 * 0.3048)
+    }
+}
+
+fn track_length_in_laps(track: Meters, lap_length: Meters) -> f64 {
+    track.0 / lap_length.0
+}
+
+fn main() {
+    let track = Meters(1600.0);
+    let lap = Feet(400.0).to_meters(); // must convert explicitly, no silent mixing
+    println!("{:.1} laps", track_length_in_laps(track, lap));
+}
+```
+
+### Working around the orphan rule for `Display`
+`Vec<String>` isn't yours and `Display` isn't yours either, so `impl Display for Vec<String>` won't compile — wrap the tags in a newtype you own, and the `impl` block is suddenly allowed.
+
+```rust,editable
+use std::fmt;
+
+struct Tags(Vec<String>);
+
+impl fmt::Display for Tags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let hashtags: Vec<String> = self.0.iter().map(|t| format!("#{t}")).collect();
+        write!(f, "{}", hashtags.join(" "))
+    }
+}
+
+fn main() {
+    let post_tags = Tags(vec!["rust".to_string(), "programming".to_string(), "learning".to_string()]);
+    println!("{post_tags}"); // #rust #programming #learning
+}
+```
+
+### Validating on the way in
+An `Email` newtype whose only constructor checks the format means every `Email` value that exists anywhere in the program has already been validated — there's no separate "unchecked string" path to forget to call.
+
+```rust,editable
+struct Email(String);
+
+impl Email {
+    fn new(raw: &str) -> Result<Email, String> {
+        if raw.contains('@') && raw.contains('.') {
+            Ok(Email(raw.to_string()))
+        } else {
+            Err(format!("'{raw}' doesn't look like an email address"))
+        }
+    }
+}
+
+fn main() {
+    for candidate in ["alice@example.com", "not-an-email"] {
+        match Email::new(candidate) {
+            Ok(e) => println!("valid: {}", e.0),
+            Err(msg) => println!("invalid: {msg}"),
+        }
+    }
+}
+```
+
+### Letting the compiler catch a swapped argument
+`SkuId` and `WarehouseId` are both `u32` underneath, but as distinct types the compiler rejects a call that passes them in the wrong order — the bug is caught before the code ever runs.
+
+```rust,editable
+struct SkuId(u32);
+struct WarehouseId(u32);
+
+fn restock(sku: SkuId, warehouse: WarehouseId, quantity: u32) {
+    println!("adding {quantity} units of sku #{} to warehouse #{}", sku.0, warehouse.0);
+}
+
+fn main() {
+    // restock(WarehouseId(7), SkuId(4021), 50); // compile error: arguments swapped
+    restock(SkuId(4021), WarehouseId(7), 50);     // correct order, compiler-checked
+}
+```
+
 ## Your turn
 
 This function tries to print a `Meters` value directly. It doesn't compile:

@@ -134,6 +134,86 @@ You *could* track `id`, `name`, and `active` as three separate variables. But th
 - **Wrong field name or type.** `User { naem: ... }` (typo) or putting a number where a `String` goes is a compile error. Fields must match the definition exactly.
 - **Reaching into a struct with `::` instead of `.`.** Fields use a dot: `user.name`. The `::` is for paths and associated functions, not field access.
 
+## More examples
+
+### Modeling a game character
+A `Character` struct keeps a player's name, health, and level together, so taking damage is just updating one field on one value instead of juggling three variables.
+
+```rust,editable
+struct Character {
+    name: String,
+    hp: u32,
+    level: u32,
+}
+
+fn main() {
+    let mut hero = Character {
+        name: String::from("Aria"),
+        hp: 100,
+        level: 1,
+    };
+
+    hero.hp -= 30; // took damage
+    println!("{} is at {} hp (level {})", hero.name, hero.hp, hero.level);
+}
+```
+
+### Representing an RGB color
+A tuple struct is a good fit here — a color is just three numbers, and naming each one (`red`, `green`, `blue`) would add ceremony without adding clarity.
+
+```rust,editable
+struct Color(u8, u8, u8);
+
+fn main() {
+    let warning = Color(255, 165, 0);
+    println!("rgb({}, {}, {})", warning.0, warning.1, warning.2);
+}
+```
+
+### Building a server config with sensible defaults
+A constructor function bakes in the common case — `127.0.0.1:8080` — so most callers never have to think about every field.
+
+```rust,editable
+struct ServerConfig {
+    host: String,
+    port: u16,
+}
+
+fn default_config() -> ServerConfig {
+    ServerConfig {
+        host: String::from("127.0.0.1"),
+        port: 8080,
+    }
+}
+
+fn main() {
+    let config = default_config();
+    println!("serving on {}:{}", config.host, config.port);
+}
+```
+
+### Totaling a shopping cart line item
+Bundling a cart line's name, price, and quantity into one struct means the subtotal calculation always uses matching values, never a price from one item paired with another's quantity.
+
+```rust,editable
+struct CartItem {
+    name: String,
+    price: f64,
+    quantity: u32,
+}
+
+fn main() {
+    let item = CartItem {
+        name: String::from("Notebook"),
+        price: 4.50,
+        quantity: 3,
+    };
+
+    let subtotal = item.price * item.quantity as f64;
+    println!("{} x{}: ${:.2}", item.name, item.quantity, subtotal);
+}
+```
+
 ## Your turn
 
 This program defines a `Book` and tries to build and update one, but it won't compile. There are two problems. Fix it so it prints the title and the updated year. Press ▶ Run.
